@@ -108,23 +108,13 @@ export const EmulatorContainer = () => {
           
           {/* V2: Floating Notification Bell Overlay */}
           {currentUser && currentScreen !== 'auth' && currentScreen !== 'profile-setup' && (
-            <div style={{ position: 'absolute', top: '64px', right: '16px', zIndex: '99' }}>
+            <div className="notif-bell-container">
               <button 
                 onClick={() => {
                   setShowNotifDropdown(!showNotifDropdown);
                   markNotificationsAsRead();
                 }}
-                style={{
-                  width: '34px',
-                  height: '34px',
-                  borderRadius: '50%',
-                  background: 'var(--white)',
-                  boxShadow: 'var(--shadow-md)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '1px solid var(--neutral-light)'
-                }}
+                className="notif-bell-btn"
                 title="푸시 알림 내역"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -152,24 +142,7 @@ export const EmulatorContainer = () => {
 
           {/* V2: Notification Dropdown Center Card */}
           {showNotifDropdown && currentUser && (
-            <div 
-              style={{
-                position: 'absolute',
-                top: '104px',
-                right: '16px',
-                width: '280px',
-                maxHeight: '280px',
-                background: 'white',
-                borderRadius: '12px',
-                boxShadow: 'var(--shadow-lg)',
-                border: '1px solid var(--neutral-light)',
-                zIndex: '9999',
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-                animation: 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
-              }}
-            >
+            <div className="notif-dropdown-container">
               <div style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--neutral-dark)' }}>🔔 실시간 구독 알림 내역</span>
                 <button 
@@ -210,25 +183,7 @@ export const EmulatorContainer = () => {
 
           {/* V2: Slide-Down iOS Push Notification Toast overlay */}
           {activeNotification && (
-            <div 
-              style={{
-                position: 'absolute',
-                top: '46px',
-                left: '12px',
-                width: 'calc(100% - 24px)',
-                background: 'rgba(30, 41, 59, 0.95)',
-                backdropFilter: 'blur(4px)',
-                color: 'white',
-                padding: '12px 14px',
-                borderRadius: '16px',
-                boxShadow: 'var(--shadow-lg)',
-                zIndex: '99999',
-                display: 'flex',
-                gap: '8px',
-                alignItems: 'center',
-                animation: 'slideDownBanner 4.0s ease-in-out forwards'
-              }}
-            >
+            <div className="push-toast-container">
               <div style={{ fontSize: '1.1rem' }}>💬</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '0.62rem', fontWeight: '700', opacity: '0.8', display: 'flex', justifyContent: 'space-between' }}>

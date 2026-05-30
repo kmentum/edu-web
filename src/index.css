@@ -260,3 +260,127 @@ input, select, textarea {
   animation: scanLaser 2s linear infinite;
   z-index: 10;
 }
+
+/* --- OVERLAY NOTIFICATION PANEL CUSTOM STYLINGS --- */
+.notif-bell-container {
+  position: absolute;
+  top: 64px;
+  right: 16px;
+  z-index: 99;
+}
+
+.notif-bell-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--white);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--neutral-light);
+}
+
+.notif-dropdown-container {
+  position: absolute;
+  top: 104px;
+  right: 16px;
+  width: 280px;
+  max-height: 280px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--neutral-light);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.push-toast-container {
+  position: absolute;
+  top: 46px;
+  left: 12px;
+  width: calc(100% - 24px);
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(4px);
+  color: white;
+  padding: 12px 14px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  z-index: 99999;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  animation: slideDownBanner 4.0s ease-in-out forwards;
+}
+
+/* --- RESPONSIVE MOBILE WEB OPTIMIZATION (max-width: 900px) --- */
+@media (max-width: 900px) {
+  .playground-container {
+    padding: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+    gap: 0 !important;
+  }
+
+  /* Hide admin section dashboard on mobile viewports */
+  .admin-section {
+    display: none !important;
+  }
+
+  .simulator-section {
+    flex: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+  }
+
+  .simulator-title-badge {
+    display: none !important;
+  }
+
+  /* Expand mockup device to full web viewport */
+  .phone-mockup {
+    width: 100vw !important;
+    height: 100vh !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+
+  /* Hide fake notches and status bar on real mobile browsers */
+  .phone-notch {
+    display: none !important;
+  }
+
+  .phone-status-bar {
+    display: none !important;
+  }
+
+  .phone-screen {
+    border-radius: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Adjust overlays since fake status bar is hidden */
+  .notif-bell-container {
+    top: 16px !important;
+    right: 16px !important;
+  }
+
+  .notif-dropdown-container {
+    top: 56px !important;
+    right: 16px !important;
+  }
+
+  .push-toast-container {
+    top: 12px !important;
+    left: 12px !important;
+    width: calc(100% - 24px) !important;
+  }
+}
