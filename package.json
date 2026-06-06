@@ -1,0 +1,7 @@
+{
+  "name": "edu-root",
+  "private": true,
+  "scripts": {
+    "build": "npm install --prefix web && npm run build --prefix web"
+  }
+}
