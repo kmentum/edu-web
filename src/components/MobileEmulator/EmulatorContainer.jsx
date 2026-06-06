@@ -28,8 +28,15 @@ export const EmulatorContainer = () => {
     if (!currentUser) {
       setCurrentScreen('auth');
       setShowNotifDropdown(false);
+    } else if (currentScreen === 'auth') {
+      // 자동 리다이렉트: 로그인 성공 시 프로필 완료 여부에 따라 피드 또는 프로필 셋업으로 이동
+      if (currentUser.schoolName && currentUser.region) {
+        setCurrentScreen('feed');
+      } else {
+        setCurrentScreen('profile-setup');
+      }
     }
-  }, [currentUser]);
+  }, [currentUser, currentScreen]);
 
   const handleNavigate = (screenName) => {
     setCurrentScreen(screenName);
