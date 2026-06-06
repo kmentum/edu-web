@@ -16,7 +16,8 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
     deleteComment,
     updatePost,
     updateComment,
-    togglePostCommentsSubscription
+    togglePostCommentsSubscription,
+    toggleLikeComment
   } = useContext(AppStateContext);
 
   const [commentInput, setCommentInput] = useState('');
@@ -28,6 +29,7 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
   const [editContentInput, setEditContentInput] = useState('');
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editCommentInput, setEditCommentInput] = useState('');
+  const [showCommentDropdownId, setShowCommentDropdownId] = useState(null);
 
   const handleSavePost = async () => {
     if (!editTitleInput.trim() || !editContentInput.trim()) {
@@ -220,7 +222,7 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
                       onMouseEnter={(e) => e.target.style.background = '#f1f5f9'}
                       onMouseLeave={(e) => e.target.style.background = 'none'}
                     >
-                      ✏️ 수정하기
+                      수정하기
                     </button>
                     <button 
                       onClick={() => {
@@ -243,7 +245,7 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
                       onMouseEnter={(e) => e.target.style.background = '#fff5f5'}
                       onMouseLeave={(e) => e.target.style.background = 'none'}
                     >
-                      🗑️ 삭제하기
+                      삭제하기
                     </button>
                   </>
                 ) : (
@@ -268,7 +270,7 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
                     onMouseEnter={(e) => e.target.style.background = '#fff5f5'}
                     onMouseLeave={(e) => e.target.style.background = 'none'}
                   >
-                    🚨 신고하기
+                    신고하기
                   </button>
                 )}
               </div>
@@ -281,7 +283,7 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
         {isEditingPost ? (
           /* 인라인 글 수정 폼 */
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '16px 14px', background: 'white', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', margin: '10px 0' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: '800', margin: '0 0 4px', color: 'var(--neutral-dark)' }}>✏️ 게시글 수정</h3>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: '800', margin: '0 0 4px', color: 'var(--neutral-dark)' }}>게시글 수정</h3>
             <div>
               <label style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--neutral-muted)', display: 'block', marginBottom: '4px' }}>제목</label>
               <input 
@@ -359,13 +361,13 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
             <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--neutral-dark)', marginBottom: '8px' }}>
               {post.isAiFlaged && <span className="badge badge-red" style={{ marginRight: '6px', fontSize: '0.7rem' }}>블라인드</span>}
               {post.title}
-              {post.qnaPoints > 0 && <span className="qna-point-badge" style={{ marginLeft: '6px' }}>💎 {post.qnaPoints}P 채택</span>}
+              {post.qnaPoints > 0 && <span className="qna-point-badge" style={{ marginLeft: '6px' }}>{post.qnaPoints}P 채택</span>}
             </h2>
 
             {/* Scope tags (채널 뱃지는 상단 헤더로 이동, 영수증 뱃지만 남김) */}
             {post.hasReceiptBadge && (
               <div style={{ display: 'flex', gap: '4px', marginBottom: '12px' }}>
-                <span className="badge badge-green">📜 학원 영수증 인증완료</span>
+                <span className="badge badge-green">학원 영수증 인증완료</span>
               </div>
             )}
 
@@ -377,7 +379,7 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
                     {post.content}
                   </div>
                   <div className="blocked-content-banner">
-                    ⚠️ AI 및 누적 신고에 의해 블라인드 처리된 글입니다.<br/>
+                    AI 및 누적 신고에 의해 블라인드 처리된 글입니다.<br/>
                     <span style={{ fontSize: '0.7rem', opacity: '0.8' }}>({post.aiFlagReason || '신고 누적으로 임시 비공개'})</span>
                     <p style={{ fontSize: '0.65rem', marginTop: '6px', color: 'var(--neutral-muted)' }}>
                       * 우측 관리자 대시보드의 [콘텐츠 관리] 탭에서 내용을 모니터링하고 복구할 수 있습니다.
@@ -392,7 +394,7 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
               {post.pollOptions && !post.isAiFlaged && (
                 <div style={{ marginTop: '16px', padding: '14px', background: 'var(--neutral-light)', borderRadius: '10px' }}>
                   <div style={{ fontSize: '0.8rem', fontWeight: '700', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>📊 익명 투표</span>
+                    <span>익명 투표</span>
                     <span style={{ fontSize: '0.7rem', fontWeight: '400', color: 'var(--neutral-muted)' }}>총 {totalPollVotes}표</span>
                   </div>
                   
@@ -413,6 +415,7 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
                             border: hasVoted ? '1px solid var(--primary)' : '1px solid var(--neutral-light)',
                             textAlign: 'left',
                             fontSize: '0.75rem',
+                            outline: 'none',
                             overflow: 'hidden',
                             display: 'flex',
                             justifyContent: 'space-between',
@@ -427,15 +430,15 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
                               position: 'absolute',
                               top: 0,
                               left: 0,
-                              height: '100%',
                               width: `${percent}%`,
+                              height: '100%',
                               background: hasVoted ? 'rgba(63, 81, 181, 0.15)' : 'rgba(0, 0, 0, 0.03)',
                               zIndex: '-1',
                               transition: 'width 0.4s ease'
                             }}
                           />
                           <span style={{ fontWeight: hasVoted ? '700' : '400' }}>
-                            {hasVoted ? '✔️ ' : ''}{opt.text}
+                            {hasVoted ? '✓ ' : ''}{opt.text}
                           </span>
                           <span style={{ fontWeight: '600', color: 'var(--neutral-muted)' }}>
                             {opt.votes}표 ({percent}%)
@@ -449,20 +452,29 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
 
               {/* Engagement Buttons & 댓글 알림 토글 스위치 */}
               <div style={{ display: 'flex', gap: '16px', marginTop: '20px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', gap: '16px' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
                   <button 
                     className={`stat-btn ${post.likedBy.includes(currentUser.uid) ? 'active' : ''}`}
                     onClick={() => toggleLikePost(post.id)}
-                    style={{ fontSize: '0.8rem', fontWeight: '500' }}
+                    style={{ fontSize: '0.8rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
-                    👍 좋아요 {post.likes}
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill={post.likedBy.includes(currentUser.uid) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+                      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                    </svg>
+                    <span>좋아요 {post.likes}</span>
                   </button>
                   <button 
-                    className={`stat-btn ${post.scrapedBy.includes(currentUser.uid) ? 'active' : ''}`}
-                    onClick={() => toggleScrapPost(post.id)}
-                    style={{ fontSize: '0.8rem', fontWeight: '500', color: post.scrapedBy.includes(currentUser.uid) ? 'var(--secondary)' : '' }}
+                    className="stat-btn"
+                    onClick={() => {
+                      const el = document.querySelector('.comment-list-title');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    style={{ fontSize: '0.8rem', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
-                    📁 스크랩 {post.scraps}
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <span>댓글 {postComments.length}</span>
                   </button>
                 </div>
 
@@ -503,132 +515,173 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
             </div>
           </>
         )}
-      </div>
 
-      {/* Comment Title */}
-      <div className="comment-list-title">댓글 ({postComments.length})</div>
+        {/* Comment Title */}
+        {!isEditingPost && (
+          <>
+            <div className="comment-list-title" style={{ fontSize: '0.82rem', fontWeight: '800', margin: '24px 0 10px', paddingBottom: '4px', color: 'var(--neutral-dark)' }}>
+              댓글 목록
+            </div>
 
-      {/* Comments Area */}
-      <div className="comments-container">
-        {postComments.length === 0 ? (
-          <p style={{ textAlign: 'center', color: 'var(--neutral-muted)', fontSize: '0.75rem', padding: '16px 0' }}>
-            작성된 댓글이 없습니다. 첫 댓글을 남겨보세요.
-          </p>
-        ) : (
-          postComments.map(comment => (
-            <div 
-              key={comment.id} 
-              className={`comment-item ${comment.isAccepted ? 'accepted' : ''}`}
-            >
-              <div className="comment-header">
-                <span className="comment-author">
-                  {comment.authorName}
-                  {comment.authorUid === post.authorUid && <span className="badge badge-indigo" style={{ fontSize: '0.55rem', padding: '1px 3px', marginLeft: '4px' }}>작성자</span>}
-                </span>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span className="post-date" style={{ fontSize: '0.65rem' }}>
-                    {new Date(comment.createdAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  
-                  {/* Delete & Edit option for Comment Author */}
-                  {comment.authorUid === currentUser.uid && (
-                    <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          setEditingCommentId(comment.id);
-                          setEditCommentInput(comment.content);
-                        }}
-                        style={{ 
-                          background: 'none', 
-                          border: 'none', 
-                          fontSize: '0.65rem', 
-                          color: 'var(--primary)', 
-                          fontWeight: '600',
-                          padding: '2px 4px',
-                          cursor: 'pointer' 
-                        }}
-                      >
-                        수정
-                      </button>
-                      <span style={{ fontSize: '0.55rem', color: '#cbd5e1' }}>|</span>
-                      <button 
-                        type="button"
-                        onClick={() => handleDeleteComment(comment.id)}
-                        style={{ 
-                          background: 'none', 
-                          border: 'none', 
-                          fontSize: '0.65rem', 
-                          color: 'var(--accent-red)', 
-                          fontWeight: '600',
-                          padding: '2px 4px',
-                          cursor: 'pointer' 
-                        }}
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* Accept Answer Option for Q&A Author */}
-                  {post.category === '질문' && !post.qnaResolved && isPostAuthor && comment.authorUid !== currentUser.uid && (
-                    <button 
-                      type="button"
-                      onClick={() => acceptComment(post.id, comment.id)}
-                      className="badge badge-gold" 
-                      style={{ cursor: 'pointer', border: '1px solid var(--accent-gold)' }}
-                    >
-                      채택하기
-                    </button>
-                  )}
-
-                  {/* Accepted badge indicator */}
-                  {comment.isAccepted && (
-                    <span className="badge badge-green">✔️ 채택됨 답변</span>
-                  )}
-                </div>
-              </div>
-              
-              {editingCommentId === comment.id ? (
-                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <input 
-                    type="text" 
-                    value={editCommentInput}
-                    onChange={(e) => setEditCommentInput(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      borderRadius: '6px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '0.78rem',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                    autoFocus
-                  />
-                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                    <button 
-                      type="button"
-                      onClick={() => setEditingCommentId(null)}
-                      style={{ border: 'none', background: '#e2e8f0', borderRadius: '4px', padding: '3px 8px', fontSize: '0.65rem', fontWeight: '700', cursor: 'pointer' }}
-                    >
-                      취소
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => handleSaveComment(comment.id)}
-                      style={{ border: 'none', background: 'var(--primary)', color: 'white', borderRadius: '4px', padding: '3px 8px', fontSize: '0.65rem', fontWeight: '700', cursor: 'pointer' }}
-                    >
-                      수정 완료
-                    </button>
-                  </div>
-                </div>
+            {/* Comments Area */}
+            <div className="comments-container">
+              {postComments.length === 0 ? (
+                <p style={{ textAlign: 'center', color: 'var(--neutral-muted)', fontSize: '0.75rem', padding: '16px 0' }}>
+                  작성된 댓글이 없습니다. 첫 댓글을 남겨보세요.
+                </p>
               ) : (
-                <div className="comment-content">{comment.content}</div>
+                postComments.map(comment => (
+                  <div 
+                    key={comment.id} 
+                    className={`comment-item ${comment.isAccepted ? 'accepted' : ''}`}
+                  >
+                    <div className="comment-header">
+                      <span className="comment-author">
+                        {comment.authorName}
+                        {comment.authorUid === post.authorUid && <span className="badge badge-indigo" style={{ fontSize: '0.55rem', padding: '1px 3px', marginLeft: '4px' }}>작성자</span>}
+                      </span>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className="post-date" style={{ fontSize: '0.65rem' }}>
+                          {new Date(comment.createdAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        
+                        {/* Accept Answer Option for Q&A Author */}
+                        {post.category === '질문' && !post.qnaResolved && isPostAuthor && comment.authorUid !== currentUser.uid && (
+                          <button 
+                            type="button"
+                            onClick={() => acceptComment(post.id, comment.id)}
+                            className="badge badge-gold" 
+                            style={{ cursor: 'pointer', border: '1px solid var(--accent-gold)' }}
+                          >
+                            채택하기
+                          </button>
+                        )}
+
+                        {/* Accepted badge indicator */}
+                        {comment.isAccepted && (
+                          <span className="badge badge-green">채택된 답변</span>
+                        )}
+
+                        {/* Delete & Edit options inside Meatball Menu */}
+                        {comment.authorUid === currentUser.uid && (
+                          <div className="comment-meatball-container">
+                            <button 
+                              type="button"
+                              className="comment-meatball-btn"
+                              onClick={() => setShowCommentDropdownId(showCommentDropdownId === comment.id ? null : comment.id)}
+                              style={{ outline: 'none' }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="1.5" />
+                                <circle cx="5" cy="12" r="1.5" />
+                                <circle cx="19" cy="12" r="1.5" />
+                              </svg>
+                            </button>
+                            
+                            {showCommentDropdownId === comment.id && (
+                              <>
+                                {/* Backdrop Overlay */}
+                                <div 
+                                  onClick={() => setShowCommentDropdownId(null)}
+                                  style={{
+                                    position: 'fixed',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    zIndex: 99,
+                                    background: 'none'
+                                  }}
+                                />
+                                
+                                <div className="comment-dropdown">
+                                  <button 
+                                    type="button"
+                                    className="comment-dropdown-btn edit"
+                                    onClick={() => {
+                                      setShowCommentDropdownId(null);
+                                      setEditingCommentId(comment.id);
+                                      setEditCommentInput(comment.content);
+                                    }}
+                                  >
+                                    수정
+                                  </button>
+                                  <button 
+                                    type="button"
+                                    className="comment-dropdown-btn delete"
+                                    onClick={() => {
+                                      setShowCommentDropdownId(null);
+                                      handleDeleteComment(comment.id);
+                                    }}
+                                  >
+                                    삭제
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {editingCommentId === comment.id ? (
+                      <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <input 
+                          type="text" 
+                          value={editCommentInput}
+                          onChange={(e) => setEditCommentInput(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '0.78rem',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                          autoFocus
+                        />
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                          <button 
+                            type="button"
+                            onClick={() => setEditingCommentId(null)}
+                            style={{ border: 'none', background: '#e2e8f0', borderRadius: '4px', padding: '3px 8px', fontSize: '0.65rem', fontWeight: '700', cursor: 'pointer' }}
+                          >
+                            취소
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => handleSaveComment(comment.id)}
+                            style={{ border: 'none', background: 'var(--primary)', color: 'white', borderRadius: '4px', padding: '3px 8px', fontSize: '0.65rem', fontWeight: '700', cursor: 'pointer' }}
+                          >
+                            수정 완료
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="comment-content">{comment.content}</div>
+                        <div className="comment-actions">
+                          <button 
+                            type="button"
+                            className={`comment-like-btn ${(comment.likedBy || []).includes(currentUser.uid) ? 'active' : ''}`}
+                            onClick={() => toggleLikeComment(comment.id)}
+                            style={{ outline: 'none' }}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill={(comment.likedBy || []).includes(currentUser.uid) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+                              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                            </svg>
+                            <span>좋아요 {comment.likes || 0}</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))
               )}
             </div>
-          ))
+          </>
         )}
       </div>
 

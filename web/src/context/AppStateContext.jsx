@@ -86,7 +86,12 @@ export const AppStateProvider = ({ children }) => {
 
   const [comments, setComments] = useState(() => {
     const saved = localStorage.getItem('edu_comments');
-    return saved ? JSON.parse(saved) : mockComments;
+    const rawComments = saved ? JSON.parse(saved) : mockComments;
+    return rawComments.map(c => ({
+      ...c,
+      likes: c.likes || 0,
+      likedBy: c.likedBy || []
+    }));
   });
 
   const [receipts, setReceipts] = useState(() => {
@@ -391,7 +396,9 @@ export const AppStateProvider = ({ children }) => {
             createdAt: c.created_at,
             isAccepted: c.is_accepted,
             grade: c.grade || '',
-            isBanned: c.is_banned
+            isBanned: c.is_banned,
+            likes: c.likes || 0,
+            likedBy: c.liked_by || []
           })));
         }
 
@@ -1069,7 +1076,9 @@ export const AppStateProvider = ({ children }) => {
       createdAt: new Date().toISOString(),
       isAccepted: false,
       grade: grade || (postId.startsWith('post-cal-') ? (authorOverrides ? authorOverrides.grade : currentUser.grade) : null),
-      isBanned: false
+      isBanned: false,
+      likes: 0,
+      likedBy: []
     };
 
     if (isSupabaseConfigured) {
@@ -1227,6 +1236,34 @@ export const AppStateProvider = ({ children }) => {
         }).eq('id', postId);
       } catch (err) {
         // 컬럼 미정의 등 에러 무시
+      }
+    }
+  };
+
+  const toggleLikeComment = async (commentId) => {
+    if (!currentUser) return;
+
+    let nextLikedBy = [];
+    setComments(prev => prev.map(c => {
+      if (c.id === commentId) {
+        const liked = c.likedBy || [];
+        const hasLiked = liked.includes(currentUser.uid);
+        nextLikedBy = hasLiked 
+          ? liked.filter(uid => uid !== currentUser.uid) 
+          : [...liked, currentUser.uid];
+        return { ...c, likes: nextLikedBy.length, likedBy: nextLikedBy };
+      }
+      return c;
+    }));
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('comments').update({
+          likes: nextLikedBy.length,
+          liked_by: nextLikedBy
+        }).eq('id', commentId);
+      } catch (err) {
+        // 에러 무시
       }
     }
   };
@@ -1657,6 +1694,7 @@ export const AppStateProvider = ({ children }) => {
       updatePost,
       updateComment,
       togglePostCommentsSubscription,
+      toggleLikeComment,
     }}>
       {children}
     </AppStateContext.Provider>
