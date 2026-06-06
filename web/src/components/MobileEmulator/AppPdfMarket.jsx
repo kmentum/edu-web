@@ -121,30 +121,9 @@ const AppPdfMarket = ({ onNavigate }) => {
         )}
       </div>
 
-      {/* Sub-header: 포인트 + 카테고리 + 정렬 */}
-      <div style={{ padding: '10px 14px 8px', background: 'white', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-          <div>
-            <h2 style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--neutral-dark)', margin: 0 }}>
-              📚 노하우 마켓
-            </h2>
-            <p style={{ fontSize: '0.62rem', color: 'var(--neutral-muted)', margin: '2px 0 0' }}>
-              선배 학부모의 내신 족보 & 시험 꿀팁 자료
-            </p>
-          </div>
-          <div style={{
-            background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
-            borderRadius: '10px',
-            padding: '6px 10px',
-            textAlign: 'center',
-          }}>
-            <div style={{ fontSize: '0.58rem', color: '#92400e', fontWeight: '600' }}>보유 포인트</div>
-            <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#b45309' }}>💎 {(currentUser.points || 0).toLocaleString()}P</div>
-          </div>
-        </div>
-
-        {/* Category chips */}
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }} className="no-scrollbar">
+      {/* Sub-header: 카테고리 칩 + 포인트 배지 */}
+      <div style={{ padding: '8px 14px', background: 'white', borderBottom: '1px solid #f1f5f9', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', flex: 1 }} className="no-scrollbar">
           {CATEGORIES.map(cat => (
             <button
               key={cat}
@@ -165,6 +144,10 @@ const AppPdfMarket = ({ onNavigate }) => {
               {cat}
             </button>
           ))}
+        </div>
+        <div style={{ flexShrink: 0, background: 'linear-gradient(135deg, #fef3c7, #fde68a)', borderRadius: '8px', padding: '4px 8px', textAlign: 'center' }}>
+          <div style={{ fontSize: '0.56rem', color: '#92400e', fontWeight: '600' }}>보유</div>
+          <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#b45309' }}>💎 {(currentUser.points || 0).toLocaleString()}P</div>
         </div>
       </div>
 
