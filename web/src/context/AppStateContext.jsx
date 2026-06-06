@@ -496,6 +496,8 @@ export const AppStateProvider = ({ children }) => {
           });
           if (profileErr && profileErr.code !== '23505') {
             console.error('Supabase 프로필 가산 실패:', profileErr);
+            alert(`회원가입 실패 (프로필 DB 오류): ${profileErr.message} (코드: ${profileErr.code})`);
+            return false;
           }
         }
         
