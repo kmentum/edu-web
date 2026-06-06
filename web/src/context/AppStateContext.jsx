@@ -1070,6 +1070,20 @@ export const AppStateProvider = ({ children }) => {
     setUsers(prev => prev.map(u => u.uid === uid ? { ...u, isBanned: false } : u));
   };
 
+  const deleteUser = async (uid) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('profiles').delete().eq('id', uid);
+      } catch (err) {
+        console.error('Supabase 유저 삭제 실패:', err);
+      }
+    }
+    setUsers(prev => prev.filter(u => u.uid !== uid));
+    if (currentUser && currentUser.uid === uid) {
+      setCurrentUser(null);
+    }
+  };
+
   const updateUserGrade = async (uid, newGrade) => {
     if (isSupabaseConfigured) {
       try {
@@ -1308,6 +1322,7 @@ export const AppStateProvider = ({ children }) => {
       rejectReceipt,
       banUser,
       unbanUser,
+      deleteUser,
       updateUserGrade,
       updateUserPoints,
       addCalendarEvent,

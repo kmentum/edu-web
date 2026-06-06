@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { AppStateContext } from '../../context/AppStateContext';
 
 export const AdminUsers = () => {
-  const { users, banUser, unbanUser, updateUserGrade, updateUserPoints } = useContext(AppStateContext);
+  const { users, banUser, unbanUser, updateUserGrade, updateUserPoints, deleteUser } = useContext(AppStateContext);
 
   const [pointsInput, setPointsInput] = useState({}); // points offset per user
 
@@ -33,6 +33,13 @@ export const AdminUsers = () => {
     }
   };
 
+  const handleDeleteUser = (user) => {
+    if (window.confirm(`⚠️ 경고: [${user.name}]님의 회원 정보를 영구 삭제하시겠습니까?\n프로필 데이터가 완전히 지워지며 목록에서 삭제됩니다.`)) {
+      deleteUser(user.uid);
+      alert(`${user.name}님의 회원 정보가 영구 삭제되었습니다.`);
+    }
+  };
+
   const handleGradeChange = (uid, newGrade) => {
     updateUserGrade(uid, newGrade);
     alert(`자녀 학년이 ${newGrade}(으)로 수동 수정되었습니다.`);
@@ -57,7 +64,7 @@ export const AdminUsers = () => {
             <th>자녀 학년 수정</th>
             <th>보유 포인트</th>
             <th>포인트 지급/차감</th>
-            <th>이용 상태 (제재)</th>
+            <th>회원 관리</th>
           </tr>
         </thead>
         <tbody>
@@ -116,13 +123,22 @@ export const AdminUsers = () => {
                 </div>
               </td>
               <td>
-                <button 
-                  onClick={() => handleToggleBan(user)}
-                  className={`action-btn ${user.isBanned ? 'action-btn-success' : 'action-btn-danger'}`}
-                  style={{ width: '80px', textAlign: 'center' }}
-                >
-                  {user.isBanned ? '정지 해제' : '영구 정지'}
-                </button>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <button 
+                    onClick={() => handleToggleBan(user)}
+                    className={`action-btn ${user.isBanned ? 'action-btn-success' : 'action-btn-danger'}`}
+                    style={{ width: '80px', textAlign: 'center', margin: 0 }}
+                  >
+                    {user.isBanned ? '정지 해제' : '영구 정지'}
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteUser(user)}
+                    className="action-btn action-btn-danger"
+                    style={{ width: '80px', backgroundColor: '#ef4444', color: 'white', border: 'none', textAlign: 'center', margin: 0 }}
+                  >
+                    회원 삭제
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
