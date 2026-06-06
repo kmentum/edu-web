@@ -5,12 +5,20 @@ import AppPdfViewerModal from './AppPdfViewerModal';
 
 const CATEGORIES = ['전체', '초등 내신', '중등 내신', '학원 팁'];
 
+
 const AppPdfMarket = ({ onNavigate }) => {
-  const { currentUser } = useContext(AppStateContext);
+  const {
+    currentUser,
+    showNotifDropdown,
+    setShowNotifDropdown,
+    notifications,
+    markNotificationsAsRead,
+  } = useContext(AppStateContext);
   const [selectedCategory, setSelectedCategory] = useState('전체');
   const [selectedPdf, setSelectedPdf] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('popular'); // 'popular' | 'rating' | 'newest'
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   if (!currentUser) return null;
 
@@ -37,12 +45,84 @@ const AppPdfMarket = ({ onNavigate }) => {
   return (
     <div className="screen-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--neutral-light)' }}>
       {/* Header */}
-      <div style={{
-        padding: '14px 16px 10px',
-        background: 'white',
-        borderBottom: '1px solid #f1f5f9',
-        flexShrink: 0,
-      }}>
+      <div className="mobile-header">
+        {isSearchExpanded ? (
+          <div className="search-bar-container" style={{ display: 'flex', width: '100%', alignItems: 'center', gap: '8px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--neutral-muted)' }}>
+              <circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              placeholder="제목, 학교명, 과목 검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                flex: 1, border: 'none', outline: 'none',
+                fontSize: '0.85rem', color: 'var(--neutral-dark)', padding: '4px 0'
+              }}
+              autoFocus
+            />
+            <button
+              onClick={() => { setIsSearchExpanded(false); setSearchQuery(''); }}
+              style={{ background: 'none', border: 'none', fontSize: '1rem', color: 'var(--neutral-muted)', cursor: 'pointer', padding: '0 4px' }}
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <>
+            <span className="mobile-logo-text">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'middle', color: '#64748b' }}>
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              </svg>
+              노하우 마켓
+            </span>
+            <div className="mobile-header-actions">
+              <button
+                onClick={() => setIsSearchExpanded(true)}
+                className="header-icon-btn"
+                title="검색"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" x2="16.65" y1="21" y2="16.65" />
+                </svg>
+              </button>
+              <button
+                onClick={() => {
+                  setShowNotifDropdown(!showNotifDropdown);
+                  markNotificationsAsRead();
+                }}
+                className="header-icon-btn"
+                style={{ position: 'relative' }}
+                title="푸시 알림 내역"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                </svg>
+                {notifications.filter(n => n.unread).length > 0 && (
+                  <span className="notif-badge-dot" />
+                )}
+              </button>
+              <button
+                onClick={() => onNavigate('mypage')}
+                className="header-icon-btn"
+                title="마이페이지"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Sub-header: 포인트 + 카테고리 + 정렬 */}
+      <div style={{ padding: '10px 14px 8px', background: 'white', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
           <div>
             <h2 style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--neutral-dark)', margin: 0 }}>
@@ -61,30 +141,6 @@ const AppPdfMarket = ({ onNavigate }) => {
             <div style={{ fontSize: '0.58rem', color: '#92400e', fontWeight: '600' }}>보유 포인트</div>
             <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#b45309' }}>💎 {(currentUser.points || 0).toLocaleString()}P</div>
           </div>
-        </div>
-
-        {/* Search */}
-        <div style={{ position: 'relative', marginBottom: '10px' }}>
-          <input
-            type="text"
-            placeholder="학교명, 과목, 키워드 검색..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px 8px 32px',
-              borderRadius: '10px',
-              border: '1px solid #e2e8f0',
-              fontSize: '0.72rem',
-              background: '#f8fafc',
-              boxSizing: 'border-box',
-              outline: 'none',
-            }}
-          />
-          <svg style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}
-            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-          </svg>
         </div>
 
         {/* Category chips */}
