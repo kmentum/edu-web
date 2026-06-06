@@ -49,7 +49,7 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
     touchStartXRef.current = e.touches[0].clientX;
     pullDistRef.current = 0;
 
-    if (scrollTop <= 0) {
+    if (scrollTop <= 5) {
       isPullingRef.current = true;
     } else {
       isPullingRef.current = false;
