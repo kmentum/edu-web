@@ -615,15 +615,21 @@ export const AppStateProvider = ({ children }) => {
     
     if (isSupabaseConfigured) {
       try {
-        await supabase.from('profiles').update({
+        const { error } = await supabase.from('profiles').update({
           school_name: schoolName,
           school_level: schoolLevel,
           grade,
           region,
           pseudonym
         }).eq('id', currentUser.uid);
+        
+        if (error) {
+          throw error;
+        }
       } catch (err) {
         console.error('Supabase 프로필 업데이트 실패:', err);
+        alert(`프로필 저장 실패 (DB 오류): ${err.message || JSON.stringify(err)}`);
+        return; // DB 저장 실패 시 이후 로컬 상태 업데이트 및 화면 전환을 차단
       }
     }
 
