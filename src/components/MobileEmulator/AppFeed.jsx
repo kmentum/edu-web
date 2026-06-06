@@ -256,7 +256,10 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
       {/* Floating Write Button */}
       <button 
         className="write-floating-btn"
-        onClick={() => onNavigate('add-post')}
+        onClick={() => {
+          setWritePostType(activeTab);
+          onNavigate('add-post');
+        }}
         title="글쓰기"
       >
         ✏️
