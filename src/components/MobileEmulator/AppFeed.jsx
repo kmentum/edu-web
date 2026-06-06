@@ -50,17 +50,26 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
         const isSameDistrict = userDistrict && post.region && post.region.includes(userDistrict);
         
         if (post.schoolName !== currentUser.schoolName && !isSameDistrict) return false;
-        if (post.type !== 'school') return false;
+        
+        // 내 글이거나 노출 범위가 'school' 또는 'all'인 경우 노출
+        const isAllowedType = post.type === 'school' || post.type === 'all' || post.authorUid === currentUser.uid;
+        if (!isAllowedType) return false;
       } else {
         if (post.schoolName !== currentUser.schoolName) return false;
-        if (post.type !== 'school') return false;
+        
+        // 내 글이거나 노출 범위가 'school' 또는 'all'인 경우 노출
+        const isAllowedType = post.type === 'school' || post.type === 'all' || post.authorUid === currentUser.uid;
+        if (!isAllowedType) return false;
       }
     } else if (activeTab === 'region') {
       if (post.region !== currentUser.region) return false;
-      if (post.type !== 'region') return false;
+      
+      // 내 글이거나 노출 범위가 'region' 또는 'all'인 경우 노출
+      const isAllowedType = post.type === 'region' || post.type === 'all' || post.authorUid === currentUser.uid;
+      if (!isAllowedType) return false;
     } else {
       // 'all' tab shows all public posts or posts marked as 'all'
-      if (post.type !== 'all' && post.schoolName !== currentUser.schoolName && post.region !== currentUser.region) {
+      if (post.type !== 'all' && post.schoolName !== currentUser.schoolName && post.region !== currentUser.region && post.authorUid !== currentUser.uid) {
         return false; // restrict private posts from showing on national feed if not relevant
       }
     }
