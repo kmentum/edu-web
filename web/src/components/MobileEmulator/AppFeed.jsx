@@ -22,7 +22,14 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showHeader, setShowHeader] = useState(true);
-  const lastScrollTopRef = useRef(0);
+  
+  // 격리형 스크롤 감지 및 복원 Ref 객체
+  const lastScrollTops = useRef({ school: 0, region: 0, all: 0 });
+
+  // 탭 전환 시 헤더 자동 복원(노출) 이펙트
+  useEffect(() => {
+    setShowHeader(true);
+  }, [activeTab]);
 
   // --- Pull-to-Refresh & Swipe Tabs Gesture States (ref 기반) ---
   const [pullDisplayDist, setPullDisplayDist] = useState(0); // 렌더링용
@@ -156,9 +163,9 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
     });
   };
 
-  const handleScroll = (e) => {
+  const handleScroll = (e, tab) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    const lastScrollTop = lastScrollTopRef.current;
+    const lastScrollTop = lastScrollTops.current[tab];
     
     // 모바일 스크롤 바운스 시 음수 또는 최대 스크롤 영역 초과 이벤트 무시
     if (scrollTop < 0 || scrollTop + clientHeight > scrollHeight) {
@@ -167,7 +174,7 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
 
     // 맨 아래 도달 50px 전부터는 헤더 가시성을 변경하지 않음 (헤더 변화로 인한 높이 싱크 무한루프 방지)
     if (scrollTop + clientHeight >= scrollHeight - 50) {
-      lastScrollTopRef.current = scrollTop;
+      lastScrollTops.current[tab] = scrollTop;
       return;
     }
     
@@ -179,7 +186,7 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
       setShowHeader(true);
     }
     
-    lastScrollTopRef.current = scrollTop;
+    lastScrollTops.current[tab] = scrollTop;
   };
 
   useEffect(() => {
@@ -210,50 +217,48 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
 
   const isScopeExpanded = activeTab === 'school' && schoolPostsCount < 3;
 
-  // Filter posts based on: 1) Active Tab, 2) Category sub-filter, 3) not deleted by Admin (isBanned === false)
-  const filteredPosts = posts.filter(post => {
-    // 1. Ban status
+  // 1. 우리 학교 글 필터링
+  const schoolPosts = posts.filter(post => {
     if (post.isBanned) return false;
-
-    // Search filter
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
-      const matchTitle = post.title && post.title.toLowerCase().includes(query);
-      const matchContent = post.content && post.content.toLowerCase().includes(query);
-      if (!matchTitle && !matchContent) return false;
+      if (!post.title?.toLowerCase().includes(query) && !post.content?.toLowerCase().includes(query)) return false;
     }
-
-    // 2. Synced academic calendar posts should ONLY show in the 'school' tab
-    if (post.id.startsWith('post-cal-')) {
-      if (activeTab !== 'school') return false;
+    const isCalendarPost = post.id.startsWith('post-cal-');
+    if (!isCalendarPost && post.type !== 'school') return false;
+    if (isScopeExpanded) {
+      const userDistrict = currentUser.region ? currentUser.region.split(' ')[1] : '';
+      const isSameDistrict = userDistrict && post.region && post.region.includes(userDistrict);
+      if (post.schoolName !== currentUser.schoolName && !isSameDistrict) return false;
+    } else {
+      if (post.schoolName !== currentUser.schoolName) return false;
     }
+    if (activeCategory !== '전체' && post.category !== activeCategory) return false;
+    return true;
+  });
 
-    // 3. Tab filter
-    if (activeTab === 'school') {
-      const isCalendarPost = post.id.startsWith('post-cal-');
-      if (!isCalendarPost && post.type !== 'school') return false;
-
-      if (isScopeExpanded) {
-        // 가변 피드 스코프 확장: 유저 구/군(예: 서초구) 추출 후 동일 구/군 학교 글까지 매핑
-        const userDistrict = currentUser.region ? currentUser.region.split(' ')[1] : '';
-        const isSameDistrict = userDistrict && post.region && post.region.includes(userDistrict);
-        
-        if (post.schoolName !== currentUser.schoolName && !isSameDistrict) return false;
-      } else {
-        if (post.schoolName !== currentUser.schoolName) return false;
-      }
-    } else if (activeTab === 'region') {
-      if (post.type !== 'region') return false;
-      if (post.region !== currentUser.region) return false;
-    } else if (activeTab === 'all') {
-      if (post.type !== 'all') return false;
+  // 2. 우리 동네 글 필터링
+  const regionPosts = posts.filter(post => {
+    if (post.isBanned) return false;
+    if (searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase();
+      if (!post.title?.toLowerCase().includes(query) && !post.content?.toLowerCase().includes(query)) return false;
     }
+    if (post.type !== 'region') return false;
+    if (post.region !== currentUser.region) return false;
+    if (activeCategory !== '전체' && post.category !== activeCategory) return false;
+    return true;
+  });
 
-    // 4. Category filter
-    if (activeCategory !== '전체') {
-      if (post.category !== activeCategory) return false;
+  // 3. 전체 광장 글 필터링
+  const allPosts = posts.filter(post => {
+    if (post.isBanned) return false;
+    if (searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase();
+      if (!post.title?.toLowerCase().includes(query) && !post.content?.toLowerCase().includes(query)) return false;
     }
-
+    if (post.type !== 'all') return false;
+    if (activeCategory !== '전체' && post.category !== activeCategory) return false;
     return true;
   });
 
@@ -319,282 +324,331 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
     setPollOpts(next);
   };
 
-  // Rendering of Main Feed List Screen
-  const renderFeedList = () => (
-    <div className="mobile-app-layout animate-fade-in" style={{ height: '100%' }}>
-      <div className={`feed-header-group ${showHeader ? 'show' : 'hide'}`}>
-        {/* Header with Search, Notif, MyPage */}
-        <div className="mobile-header">
-        {isSearchExpanded ? (
-          <div className="search-bar-container" style={{ display: 'flex', width: '100%', alignItems: 'center', gap: '8px' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--neutral-muted)' }}>
-              <circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" />
-            </svg>
-            <input 
-              type="text" 
-              placeholder="글 제목, 내용 검색..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                flex: 1,
-                border: 'none',
-                outline: 'none',
-                fontSize: '0.85rem',
-                color: 'var(--neutral-dark)',
-                padding: '4px 0'
-              }}
-              autoFocus
-            />
-            <button 
-              onClick={() => { setIsSearchExpanded(false); setSearchQuery(''); }}
-              style={{ background: 'none', border: 'none', fontSize: '1rem', color: 'var(--neutral-muted)', cursor: 'pointer', padding: '0 4px' }}
-            >
-              ✕
-            </button>
-          </div>
-        ) : (
-          <>
-            <span className="mobile-logo-text">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'middle', color: '#64748b' }}>
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-              커뮤니티
-            </span>
-            <div className="mobile-header-actions">
-              <button 
-                onClick={() => setIsSearchExpanded(true)}
-                className="header-icon-btn"
-                title="검색"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" x2="16.65" y1="21" y2="16.65" />
-                </svg>
-              </button>
-              <button 
-                onClick={() => {
-                  setShowNotifDropdown(!showNotifDropdown);
-                  markNotificationsAsRead();
-                }}
-                className="header-icon-btn"
-                style={{ position: 'relative' }}
-                title="푸시 알림 내역"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                </svg>
-                {notifications.filter(n => n.unread).length > 0 && (
-                  <span className="notif-badge-dot" />
-                )}
-              </button>
-              <button 
-                onClick={() => onNavigate('mypage')}
-                className="header-icon-btn"
-                title="마이페이지"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Mobile Tabs */}
-      <div className="mobile-tabs">
-        <button 
-          className={`mobile-tab-btn ${activeTab === 'school' ? 'active' : ''}`}
-          onClick={() => setActiveTab('school')}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}
-        >
-          우리 학교
-          {hasNewPost('school') && <span className="tab-new-badge">N</span>}
-        </button>
-        <button 
-          className={`mobile-tab-btn ${activeTab === 'region' ? 'active' : ''}`}
-          onClick={() => setActiveTab('region')}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}
-        >
-          우리 동네
-          {hasNewPost('region') && <span className="tab-new-badge">N</span>}
-        </button>
-        <button 
-          className={`mobile-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-          onClick={() => setActiveTab('all')}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}
-        >
-          전체 광장
-          {hasNewPost('all') && <span className="tab-new-badge">N</span>}
-        </button>
-      </div>
-      </div>
-
-      {/* Filter Category & Scroll View */}
-      <div 
-        className="mobile-content-area" 
-        onScroll={handleScroll}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+  const renderPullToRefresh = (tab) => {
+    if ((pullDisplayDist <= 0 && !isRefreshing) || activeTab !== tab) return null;
+    const progress = Math.min(pullDisplayDist / THRESHOLD, 1);
+    const r = 14;
+    const circ = 2 * Math.PI * r;
+    const dashOffset = circ * (1 - (isRefreshing ? 1 : progress));
+    return (
+      <div
+        className="ptr-indicator"
+        style={{
+          height: isRefreshing ? `${THRESHOLD}px` : `${pullDisplayDist}px`,
+          transition: isPullingRef.current ? 'none' : 'height 0.28s ease',
+          paddingBottom: pullDisplayDist > 15 ? '6px' : '0px',
+        }}
       >
-        {/* Pull-to-Refresh Indicator */}
-        {(pullDisplayDist > 0 || isRefreshing) && (() => {
-          const progress = Math.min(pullDisplayDist / THRESHOLD, 1);
-          // SVG 도넛바 파라미터
-          const r = 14;
-          const circ = 2 * Math.PI * r;
-          const dashOffset = circ * (1 - (isRefreshing ? 1 : progress));
-          return (
-            <div
-              className="ptr-indicator"
-              style={{
-                height: isRefreshing ? `${THRESHOLD}px` : `${pullDisplayDist}px`,
-                transition: isPullingRef.current ? 'none' : 'height 0.28s ease',
-                paddingBottom: pullDisplayDist > 15 ? '6px' : '0px',
-              }}
-            >
-              {/* 도넛 프로그레스 원 */}
-              <svg
-                width="34" height="34"
-                style={{
-                  transform: isRefreshing ? undefined : `rotate(${-90 + progress * 360}deg)`,
-                  animation: isRefreshing ? 'spinDonut 0.8s linear infinite' : undefined,
-                  opacity: Math.min(pullDisplayDist / 20, 1),
-                }}
-                viewBox="0 0 36 36"
-              >
-                {/* 배경 트랙 */}
-                <circle
-                  cx="18" cy="18" r={r}
-                  fill="none"
-                  className="ptr-svg-track"
-                  strokeWidth="3"
-                />
-                {/* 진행 Arc */}
-                <circle
-                  cx="18" cy="18" r={r}
-                  fill="none"
-                  stroke={progress >= 1 || isRefreshing ? 'var(--primary)' : '#94a3b8'}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeDasharray={`${circ}`}
-                  strokeDashoffset={isRefreshing ? 0 : dashOffset}
-                  transform="rotate(-90 18 18)"
-                  style={{ transition: isPullingRef.current ? 'none' : 'stroke-dashoffset 0.1s' }}
-                />
-              </svg>
-              <span className="ptr-text" style={{ opacity: Math.min(pullDisplayDist / 30, 1) }}>
-                {isRefreshing ? '새로고침 중...' : progress >= 1 ? '놓으면 새로고침' : '당겨서 새로고침'}
+        <svg
+          width="34" height="34"
+          style={{
+            transform: isRefreshing ? undefined : `rotate(${-90 + progress * 360}deg)`,
+            animation: isRefreshing ? 'spinDonut 0.8s linear infinite' : undefined,
+            opacity: Math.min(pullDisplayDist / 20, 1),
+          }}
+          viewBox="0 0 36 36"
+        >
+          <circle
+            cx="18" cy="18" r={r}
+            fill="none"
+            className="ptr-svg-track"
+            strokeWidth="3"
+          />
+          <circle
+            cx="18" cy="18" r={r}
+            fill="none"
+            stroke={progress >= 1 || isRefreshing ? 'var(--primary)' : '#94a3b8'}
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeDasharray={`${circ}`}
+            strokeDashoffset={isRefreshing ? 0 : dashOffset}
+            transform="rotate(-90 18 18)"
+            style={{ transition: isPullingRef.current ? 'none' : 'stroke-dashoffset 0.1s' }}
+          />
+        </svg>
+        <span className="ptr-text" style={{ opacity: Math.min(pullDisplayDist / 30, 1) }}>
+          {isRefreshing ? '새로고침 중...' : progress >= 1 ? '놓으면 새로고침' : '당겨서 새로고침'}
+        </span>
+      </div>
+    );
+  };
+
+  const renderPostList = (postList, tabName) => {
+    return postList.length === 0 ? (
+      <div style={{ textAlign: 'center', padding: '40px 10px', color: 'var(--neutral-muted)', fontSize: '0.8rem' }}>
+        등록된 게시글이 없습니다. 첫 글을 작성해 보세요!
+      </div>
+    ) : (
+      postList.map(post => (
+        <div 
+          key={post.id} 
+          className="post-card animate-slide-up"
+          onClick={() => {
+            onSelectPost(post.id);
+            onNavigate('post-detail');
+          }}
+        >
+          <div className="post-card-header">
+            <div className="post-meta-left">
+              <span className={`badge ${post.category === '자유' ? 'badge-indigo' : post.category === '질문' ? 'badge-gold' : 'badge-teal'}`}>
+                {post.category}
+              </span>
+              <span className="post-author">
+                {tabName === 'all' ? maskPseudonym(post.authorName) : post.authorName}
               </span>
             </div>
-          );
-        })()}
-
-        {/* Category Badges */}
-        <div className="feed-filter-bar">
-          {['전체', '자유', '질문', '리뷰'].map(cat => (
-            <button 
-              key={cat}
-              className={`filter-badge ${activeCategory === cat ? 'active' : ''}`}
-              onClick={() => setActiveCategory(cat)}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-
-
-        {/* Scope expansion notice banner (UTIL-03.1) */}
-        {isScopeExpanded && (
-          <div className="scope-expansion-banner animate-fade-in">
-            📢 우리 학교 글이 부족하여 인근 <strong>{currentUser.region ? currentUser.region.split(' ')[1] || '지역' : '지역'}</strong> 소식을 함께 노출합니다.
+            <span className="post-date">
+              {new Date(post.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+            </span>
           </div>
-        )}
 
-        {/* Post cards list */}
-        {filteredPosts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 10px', color: 'var(--neutral-muted)', fontSize: '0.8rem' }}>
-            등록된 게시글이 없습니다. 첫 글을 작성해 보세요!
+          <div className="post-title">
+            {post.isAiFlaged && <span className="badge badge-red" style={{ marginRight: '6px', fontSize: '0.65rem' }}>차단됨</span>}
+            {post.title}
+            {post.qnaPoints > 0 && <span className="qna-point-badge" style={{ marginLeft: '6px' }}>{post.qnaPoints}P 채택</span>}
           </div>
-        ) : (
-          filteredPosts.map(post => (
-            <div 
-              key={post.id} 
-              className="post-card animate-slide-up"
-              onClick={() => {
-                onSelectPost(post.id);
-                onNavigate('post-detail');
-              }}
-            >
-              <div className="post-card-header">
-                <div className="post-meta-left">
-                  <span className={`badge ${post.category === '자유' ? 'badge-indigo' : post.category === '질문' ? 'badge-gold' : 'badge-teal'}`}>
-                    {post.category}
-                  </span>
-                  {/* RSK-03: 전국 탭일 때만 법정동 지역명 마스킹 처리 */}
-                  <span className="post-author">
-                    {activeTab === 'all' ? maskPseudonym(post.authorName) : post.authorName}
-                  </span>
-                </div>
-                <span className="post-date">
-                  {new Date(post.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-                </span>
+
+          {post.isAiFlaged ? (
+            <div className="post-snippet" style={{ filter: 'blur(3px)', userSelect: 'none', color: 'var(--accent-red)' }}>
+              부적절한 내용 감지로 비공개 처리되었습니다.
+            </div>
+          ) : (
+            <div className="post-snippet">{post.content}</div>
+          )}
+
+          <div className="post-card-footer">
+            <div className="post-stats">
+              <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#64748b' }}>
+                  <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                </svg>
+                <span>{post.likes}</span>
               </div>
-
-              {/* Title */}
-              <div className="post-title">
-                {post.isAiFlaged && <span className="badge badge-red" style={{ marginRight: '6px', fontSize: '0.65rem' }}>차단됨</span>}
-                {post.title}
-                {post.qnaPoints > 0 && <span className="qna-point-badge" style={{ marginLeft: '6px' }}>💎 {post.qnaPoints}P</span>}
-              </div>
-
-              {/* Snippet / Blurr if flagged */}
-              {post.isAiFlaged ? (
-                <div className="post-snippet" style={{ filter: 'blur(3px)', userSelect: 'none', color: 'var(--accent-red)' }}>
-                  부적절한 내용 감지로 비공개 처리되었습니다.
-                </div>
-              ) : (
-                <div className="post-snippet">{post.content}</div>
-              )}
-
-              <div className="post-card-footer">
-                <div className="post-stats">
-                  <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#64748b' }}>
-                      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-                    </svg>
-                    <span>{post.likes}</span>
-                  </div>
-                  <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#64748b' }}>
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                    <span>{post.commentsCount}</span>
-                  </div>
-                  <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#64748b' }}>
-                      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-                    </svg>
-                    <span>{post.scraps}</span>
-                  </div>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '4px' }}>
-                  {post.hasReceiptBadge && <span className="badge badge-teal" style={{fontSize: '0.65rem'}}>📜 학원 영수증 인증</span>}
-                  {post.type === 'school' && <span className="badge badge-indigo" style={{fontSize: '0.65rem'}}>학교</span>}
-                  {post.type === 'region' && <span className="badge badge-teal" style={{fontSize: '0.65rem'}}>동네</span>}
-                </div>
+              <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#64748b' }}>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>{post.commentsCount}</span>
               </div>
             </div>
-          ))
-        )}
+            
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {post.hasReceiptBadge && <span className="badge badge-teal" style={{fontSize: '0.65rem'}}>학원 인증</span>}
+              {post.type === 'school' && <span className="badge badge-indigo" style={{fontSize: '0.65rem'}}>우리 학교</span>}
+              {post.type === 'region' && <span className="badge badge-teal" style={{fontSize: '0.65rem'}}>우리 동네</span>}
+            </div>
+          </div>
+        </div>
+      ))
+    );
+  };
+
+  // Rendering of Main Feed List Screen
+  const renderFeedList = () => {
+    const activeIndex = activeTab === 'school' ? 0 : activeTab === 'region' ? 1 : 2;
+
+    return (
+      <div className="mobile-app-layout animate-fade-in" style={{ height: '100%' }}>
+        <div className={`feed-header-group ${showHeader ? 'show' : 'hide'}`}>
+          {/* Header with Search, Notif, MyPage */}
+          <div className="mobile-header">
+            {isSearchExpanded ? (
+              <div className="search-bar-container" style={{ display: 'flex', width: '100%', alignItems: 'center', gap: '8px' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--neutral-muted)' }}>
+                  <circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" />
+                </svg>
+                <input 
+                  type="text" 
+                  placeholder="글 제목, 내용 검색..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    flex: 1,
+                    border: 'none',
+                    outline: 'none',
+                    fontSize: '0.85rem',
+                    color: 'var(--neutral-dark)',
+                    padding: '4px 0'
+                  }}
+                  autoFocus
+                />
+                <button 
+                  onClick={() => { setIsSearchExpanded(false); setSearchQuery(''); }}
+                  style={{ background: 'none', border: 'none', fontSize: '1rem', color: 'var(--neutral-muted)', cursor: 'pointer', padding: '0 4px' }}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <>
+                <span className="mobile-logo-text">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'middle', color: '#64748b' }}>
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  커뮤니티
+                </span>
+                <div className="mobile-header-actions">
+                  <button 
+                    onClick={() => setIsSearchExpanded(true)}
+                    className="header-icon-btn"
+                    title="검색"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" x2="16.65" y1="21" y2="16.65" />
+                    </svg>
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowNotifDropdown(!showNotifDropdown);
+                      markNotificationsAsRead();
+                    }}
+                    className="header-icon-btn"
+                    style={{ position: 'relative' }}
+                    title="푸시 알림 내역"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                    </svg>
+                    {notifications.filter(n => n.unread).length > 0 && (
+                      <span className="notif-badge-dot" />
+                    )}
+                  </button>
+                  <button 
+                    onClick={() => onNavigate('mypage')}
+                    className="header-icon-btn"
+                    title="마이페이지"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Mobile Tabs */}
+          <div className="mobile-tabs">
+            <button 
+              className={`mobile-tab-btn ${activeTab === 'school' ? 'active' : ''}`}
+              onClick={() => setActiveTab('school')}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}
+            >
+              우리 학교
+              {hasNewPost('school') && <span className="tab-new-badge">N</span>}
+            </button>
+            <button 
+              className={`mobile-tab-btn ${activeTab === 'region' ? 'active' : ''}`}
+              onClick={() => setActiveTab('region')}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}
+            >
+              우리 동네
+              {hasNewPost('region') && <span className="tab-new-badge">N</span>}
+            </button>
+            <button 
+              className={`mobile-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
+              onClick={() => setActiveTab('all')}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}
+            >
+              전체 광장
+              {hasNewPost('all') && <span className="tab-new-badge">N</span>}
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Category & Scroll Slides Wrapper */}
+        <div className="mobile-content-slides-wrapper">
+          <div className="mobile-content-slides" style={{ transform: `translateX(-${activeIndex * 33.3333}%)` }}>
+            
+            {/* Slide 1: 우리 학교 피드 */}
+            <div 
+              className="mobile-content-slide"
+              onScroll={(e) => handleScroll(e, 'school')}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {renderPullToRefresh('school')}
+
+              <div className="feed-filter-bar">
+                {['전체', '자유', '질문', '리뷰'].map(cat => (
+                  <button 
+                    key={cat}
+                    className={`filter-badge ${activeCategory === cat ? 'active' : ''}`}
+                    onClick={() => setActiveCategory(cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {isScopeExpanded && (
+                <div className="scope-expansion-banner animate-fade-in">
+                  📢 우리 학교 글이 부족하여 인근 <strong>{currentUser.region ? currentUser.region.split(' ')[1] || '지역' : '지역'}</strong> 소식을 함께 노출합니다.
+                </div>
+              )}
+
+              {renderPostList(schoolPosts, 'school')}
+            </div>
+
+            {/* Slide 2: 우리 동네 피드 */}
+            <div 
+              className="mobile-content-slide"
+              onScroll={(e) => handleScroll(e, 'region')}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {renderPullToRefresh('region')}
+
+              <div className="feed-filter-bar">
+                {['전체', '자유', '질문', '리뷰'].map(cat => (
+                  <button 
+                    key={cat}
+                    className={`filter-badge ${activeCategory === cat ? 'active' : ''}`}
+                    onClick={() => setActiveCategory(cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {renderPostList(regionPosts, 'region')}
+            </div>
+
+            {/* Slide 3: 전체 광장 피드 */}
+            <div 
+              className="mobile-content-slide"
+              onScroll={(e) => handleScroll(e, 'all')}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {renderPullToRefresh('all')}
+
+              <div className="feed-filter-bar">
+                {['전체', '자유', '질문', '리뷰'].map(cat => (
+                  <button 
+                    key={cat}
+                    className={`filter-badge ${activeCategory === cat ? 'active' : ''}`}
+                    onClick={() => setActiveCategory(cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {renderPostList(allPosts, 'all')}
+            </div>
+
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Rendering of Write Post Screen
   const renderWriteScreen = () => (

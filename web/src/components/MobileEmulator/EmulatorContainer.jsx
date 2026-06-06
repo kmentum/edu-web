@@ -216,6 +216,18 @@ export const EmulatorContainer = () => {
               <span>학사일정</span>
             </button>
             <button 
+              className={`nav-item-btn nav-write-btn ${activeNavTab === 'add-post' ? 'active' : ''}`}
+              onClick={() => handleNavigate('add-post')}
+            >
+              <span className="nav-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </span>
+              <span>글쓰기</span>
+            </button>
+            <button 
               className={`nav-item-btn ${activeNavTab === 'receipt' ? 'active' : ''}`}
               onClick={() => handleNavigate('receipt')}
             >
@@ -240,18 +252,6 @@ export const EmulatorContainer = () => {
                 </svg>
               </span>
               <span>마켓</span>
-            </button>
-            <button 
-              className={`nav-item-btn nav-write-btn ${activeNavTab === 'add-post' ? 'active' : ''}`}
-              onClick={() => handleNavigate('add-post')}
-            >
-              <span className="nav-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
-              </span>
-              <span>글쓰기</span>
             </button>
           </div>
         )}

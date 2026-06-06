@@ -329,6 +329,37 @@
   gap: 12px;
 }
 
+/* Horizontal Slider for Swipe Tabs */
+.mobile-content-slides-wrapper {
+  overflow: hidden;
+  width: 100%;
+  flex: 1;
+  position: relative;
+  background-color: var(--white);
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-content-slides {
+  display: flex;
+  width: 300%;
+  height: 100%;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+}
+
+.mobile-content-slide {
+  width: 33.3333%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 12px;
+  gap: 12px;
+}
+
 /* Feed Category Filter */
 .feed-filter-bar {
   display: flex;
