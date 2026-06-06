@@ -16,7 +16,8 @@ export const EmulatorContainer = () => {
     clearNotifications,
     markNotificationsAsRead,
     showNotifDropdown,
-    setShowNotifDropdown
+    setShowNotifDropdown,
+    theme
   } = useContext(AppStateContext);
   
   // Custom router screen states: 'auth', 'profile-setup', 'feed', 'post-detail', 'add-post', 'receipt', 'calendar', 'mypage'
@@ -75,7 +76,7 @@ export const EmulatorContainer = () => {
       case 'calendar':
         return <AppCalendar onNavigate={handleNavigate} />;
       case 'mypage':
-        return <AppMyPage onNavigate={handleNavigate} />;
+        return <AppMyPage onNavigate={handleNavigate} onSelectPost={handleSelectPost} />;
       default:
         return <AppAuth onNavigate={handleNavigate} />;
     }
@@ -111,7 +112,7 @@ export const EmulatorContainer = () => {
         </div>
 
         {/* Dynamic Screen Area */}
-        <div className="phone-screen">
+        <div className={`phone-screen ${theme === 'dark' ? 'dark-theme' : ''}`}>
           
 
 

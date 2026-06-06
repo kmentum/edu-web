@@ -1191,3 +1191,171 @@ button:active, .post-card:active, .calendar-day:active, .calendar-event-card:act
   display: inline-block;
   font-size: 0.9rem;
 }
+
+/* --- PREMIUM DARK THEME OVERRIDES --- */
+.phone-screen.dark-theme {
+  --neutral-bg: #0f172a;        /* Sleek Slate-900 */
+  --neutral-dark: #f8fafc;      /* Slate-50 */
+  --neutral-text: #e2e8f0;      /* Slate-200 */
+  --neutral-light: #334155;     /* Slate-700 (Border) */
+  --neutral-muted: #94a3b8;     /* Slate-400 */
+  --white: #1e293b;             /* Slate-800 (Card background) */
+  
+  background-color: var(--neutral-bg);
+  color: var(--neutral-dark);
+}
+
+/* 다크테마 시 디바이스 및 헤더, 내비게이션 바 하단 보정 */
+.phone-screen.dark-theme .mobile-header,
+.phone-screen.dark-theme .mobile-nav-bar,
+.phone-screen.dark-theme .feed-header-group,
+.phone-screen.dark-theme .feed-filter-bar {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+.phone-screen.dark-theme .nav-item-btn {
+  color: #94a3b8 !important;
+}
+
+.phone-screen.dark-theme .nav-item-btn.active {
+  color: var(--secondary) !important;
+}
+
+.phone-screen.dark-theme .post-card,
+.phone-screen.dark-theme .notif-dropdown-container,
+.phone-screen.dark-theme .receipt-card,
+.phone-screen.dark-theme .academy-search-results,
+.phone-screen.dark-theme .qna-points-banner,
+.phone-screen.dark-theme .mypage-section-card {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: var(--neutral-dark) !important;
+}
+
+.phone-screen.dark-theme .text-input,
+.phone-screen.dark-theme select,
+.phone-screen.dark-theme textarea {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+  color: var(--neutral-dark) !important;
+}
+
+.phone-screen.dark-theme .comment-item,
+.phone-screen.dark-theme .reply-box {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+/* --- Switch Toggle Style --- */
+.switch-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.switch-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--neutral-dark);
+}
+
+.switch-toggle-btn {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background-color: #cbd5e1;
+  position: relative;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.switch-toggle-btn.active {
+  background-color: var(--secondary);
+}
+
+.switch-toggle-btn::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: white;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.switch-toggle-btn.active::after {
+  transform: translateX(20px);
+}
+
+/* --- MyPage Custom Drawer Overlay --- */
+.mypage-drawer-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.2s ease;
+}
+
+.mypage-drawer-content {
+  width: 100%;
+  max-height: 80%;
+  background-color: var(--white);
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 20px 16px 32px;
+  overflow-y: auto;
+  box-shadow: 0 -10px 25px rgba(0,0,0,0.15);
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.phone-screen.dark-theme .mypage-drawer-content {
+  background-color: #1e293b !important;
+  color: var(--neutral-dark);
+  border-top: 1px solid #334155;
+}
+
+.mypage-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--neutral-light);
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+}
+
+.phone-screen.dark-theme .mypage-drawer-header {
+  border-color: #334155 !important;
+}
+
+.mypage-menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background-color: var(--neutral-light);
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--neutral-dark);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.mypage-menu-item:active {
+  transform: scale(0.98);
+}
+
+.phone-screen.dark-theme .mypage-menu-item {
+  background-color: #0f172a !important;
+}

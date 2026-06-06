@@ -143,6 +143,25 @@ export const AppStateProvider = ({ children }) => {
     }
   }, [activeTab]);
 
+  // --- 테마 및 서비스 설정 상태 & LocalStorage 동기화 ---
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('edu_theme');
+    return saved || 'light';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('edu_theme', theme);
+  }, [theme]);
+
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    const saved = localStorage.getItem('edu_notif_enabled');
+    return saved ? JSON.parse(saved) : { comments: true, calendar: true };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('edu_notif_enabled', JSON.stringify(notificationsEnabled));
+  }, [notificationsEnabled]);
+
   // --- V1/V2 LOCALSTORAGE SYNCS (Only runs when Supabase is NOT active) ---
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -703,6 +722,41 @@ export const AppStateProvider = ({ children }) => {
     }));
 
     alert('가명 닉네임이 정상 수정되었습니다.');
+    return true;
+  };
+
+  const updateUserPassword = async (newPassword) => {
+    if (!currentUser) return false;
+    if (!newPassword || newPassword.length < 6) {
+      alert('비밀번호는 최소 6자 이상이어야 합니다.');
+      return false;
+    }
+
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) throw error;
+      } catch (err) {
+        console.error('Supabase 비밀번호 변경 실패:', err);
+        alert(`비밀번호 변경 실패: ${err.message || JSON.stringify(err)}`);
+        return false;
+      }
+    } else {
+      // 데모 모드 비밀번호 변경
+      setUsers(prev => prev.map(u => {
+        if (u.uid === currentUser.uid) {
+          return { ...u, password: newPassword };
+        }
+        return u;
+      }));
+      // currentUser 로컬 비밀번호도 동기화
+      setCurrentUser(prev => ({
+        ...prev,
+        password: newPassword
+      }));
+    }
+
+    alert('비밀번호가 안전하게 변경되었습니다.');
     return true;
   };
 
@@ -1457,6 +1511,11 @@ export const AppStateProvider = ({ children }) => {
       updateUserPseudonym,
       triggerRefresh,
       lastTabVisited,
+      theme,
+      setTheme,
+      notificationsEnabled,
+      setNotificationsEnabled,
+      updateUserPassword,
       createPost,
       deletePost,
       restorePost,
