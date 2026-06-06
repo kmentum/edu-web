@@ -982,3 +982,68 @@
   animation: drawerSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
 }
 
+/* --- Phase 1 MVP 고도화 컴포넌트 스타일 --- */
+.connection-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 50px;
+  margin-top: 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+.connection-badge.status-connected {
+  background-color: var(--secondary-light);
+  color: var(--secondary);
+  border: 1px solid rgba(13, 148, 136, 0.2);
+}
+
+.connection-badge.status-demo {
+  background-color: var(--accent-gold-light);
+  color: var(--accent-gold);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.auth-real-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.real-google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background-color: var(--neutral-dark);
+  color: var(--white);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+}
+
+.real-google-btn:hover {
+  background-color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.scope-expansion-banner {
+  background-color: var(--accent-gold-light);
+  color: #78350f;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  border-left: 4px solid var(--accent-gold);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+

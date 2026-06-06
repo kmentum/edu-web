@@ -208,6 +208,32 @@ export const mockPosts = [
     isBanned: false,
     createdAt: '2026-05-29T09:00:00Z',
     hasReceiptBadge: false,
+  },
+  {
+    id: 'post-balance-01',
+    authorUid: 'system',
+    authorName: '전국 밸런스봇',
+    category: '질문',
+    title: '[⚖️ 공감 투표] 이번 주말, 대치동 학원 라이딩 셔틀 vs 집에서 홈스쿨링 삼시세끼?',
+    content: '주말만 되면 아이 학원 실어 나르느라 운전기사 노릇을 해야 하는 주말 라이딩... 대안으로 집에서 삼시세끼 직접 챙기며 홈스쿨링하는 것 중 학부모님들의 진짜 선호도는 어떨까요? 투표해 봅시다!',
+    schoolName: '',
+    region: '전국',
+    type: 'all',
+    likes: 42,
+    likedBy: [],
+    scraps: 18,
+    scrapedBy: [],
+    reports: 0,
+    reportedBy: [],
+    commentsCount: 0,
+    isAiFlaged: false,
+    isBanned: false,
+    createdAt: '2026-06-05T09:00:00Z',
+    hasReceiptBadge: false,
+    pollOptions: [
+      { text: '대치동 라이딩 셔틀하기 (몸은 피곤하나 심적 안심)', votes: 27, votedUids: [] },
+      { text: '집에서 삼시세끼 챙기며 홈스쿨링 (지갑은 세이브되나 밥 챙기기 지옥)', votes: 19, votedUids: [] }
+    ]
   }
 ];
 

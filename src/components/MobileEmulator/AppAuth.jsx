@@ -1,8 +1,9 @@
 import React, { useContext, useState } from 'react';
 import { AppStateContext } from '../../context/AppStateContext';
+import { isSupabaseConfigured } from '../../lib/supabaseClient';
 
 export const AppAuth = ({ onNavigate }) => {
-  const { users, loginWithMockAccount, loginCustomEmail } = useContext(AppStateContext);
+  const { users, loginWithMockAccount, loginCustomEmail, loginWithGoogle } = useContext(AppStateContext);
   
   const [customName, setCustomName] = useState('');
   const [customEmail, setCustomEmail] = useState('');
@@ -20,6 +21,11 @@ export const AppAuth = ({ onNavigate }) => {
         onNavigate('profile-setup');
       }
     }
+  };
+
+  const handleRealGoogleLogin = async () => {
+    await loginWithGoogle();
+    // actual redirect is handled by onAuthStateChange in AppStateContext
   };
 
   const handleCustomLogin = (e) => {
@@ -48,10 +54,35 @@ export const AppAuth = ({ onNavigate }) => {
   return (
     <div className="mobile-auth-screen animate-fade-in">
       <div className="auth-header">
-        <div className="auth-icon">👨‍👩‍👧‍👦</div>
+        <div className="auth-icon"> must-sso 👨‍👩‍👧‍👦</div>
         <h2>학부모 교육 커뮤니티</h2>
         <p>구글 SSO 기반 인증으로 안심하고 대화하세요</p>
+        
+        {/* Connection status badge */}
+        {isSupabaseConfigured ? (
+          <div className="connection-badge status-connected">
+            🟢 클라우드 Supabase DB 실시간 연동 중
+          </div>
+        ) : (
+          <div className="connection-badge status-demo">
+            🟡 로컬 시뮬레이션 데모 모드 (무중단)
+          </div>
+        )}
       </div>
+
+      {isSupabaseConfigured && (
+        <div className="auth-real-section animate-slide-up">
+          <button 
+            type="button" 
+            className="real-google-btn"
+            onClick={handleRealGoogleLogin}
+          >
+            <span style={{ marginRight: '8px' }}>🌐</span>
+            Google 계정으로 로그인 (실시간 연동)
+          </button>
+          <div className="auth-divider">또는 시뮬레이션용 임시 로그인</div>
+        </div>
+      )}
 
       <div className="input-group" style={{ marginBottom: '12px' }}>
         <span className="input-label">테스트용 구글 계정 선택 (원클릭 로그인)</span>

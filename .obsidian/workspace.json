@@ -14,7 +14,7 @@
               "type": "markdown",
               "state": {
                 "file": "business_plan_and_specification.md",
-                "mode": "preview",
+                "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
@@ -185,9 +185,30 @@
   },
   "active": "7a3236317b4accc5",
   "lastOpenFiles": [
-    "business_plan_and_specification.pdf",
-    "README.md",
+    "ios/App/App/public/assets/index-BVS3uE9X.js",
+    "ios/App/App/public/assets/index-BTfb_Eyb.css",
+    "android/app/src/main/assets/public/assets/index-BVS3uE9X.js",
+    "android/app/src/main/assets/public/assets/index-BTfb_Eyb.css",
+    "dist/assets/index-BTfb_Eyb.css",
+    "dist/assets/index-BVS3uE9X.js",
+    "src/utils/masking.js",
+    "src/utils",
+    "supabase_schema.sql",
+    "src/lib/supabaseClient.js",
+    "src/lib",
+    "node_modules/@supabase/auth-js/migrations/README.md",
+    "node_modules/@supabase/auth-js/migrations/lockless-coordination.md",
+    "node_modules/@supabase/auth-js/AGENTS.md",
+    "node_modules/@supabase/realtime-js/migrations/README.md",
+    "node_modules/@supabase/realtime-js/AGENTS.md",
+    "node_modules/@supabase/functions-js/migrations/README.md",
+    "node_modules/@supabase/functions-js/AGENTS.md",
+    "node_modules/@supabase/postgrest-js/migrations/README.md",
+    "node_modules/@supabase/phoenix/priv/static/phoenix.png",
+    "node_modules/@supabase/phoenix/priv/static/phoenix-orange.png",
     "business_plan_and_specification.md",
-    "학부모_익명_커뮤니티_앱_기능명세서_v2.md"
+    "학부모_익명_커뮤니티_앱_기능명세서_v2.md",
+    "학부모_익명_커뮤니티_앱_기능명세서_v1.md",
+    "README.md"
   ]
 }

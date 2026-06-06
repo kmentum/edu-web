@@ -1,5 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { AppStateContext } from '../../context/AppStateContext';
+import { maskPseudonym } from '../../utils/masking';
 
 export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
   const { currentUser, posts, createPost } = useContext(AppStateContext);
@@ -22,6 +23,15 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
 
   if (!currentUser) return null;
 
+  // UTIL-03.1: 가변형 피드 스코프 계산 (우리 학교 탭의 실제 글 개수가 3개 미만이면 구/군 소속 학교 소식 병합)
+  const schoolPostsCount = posts.filter(post => 
+    !post.isBanned && 
+    post.schoolName === currentUser.schoolName && 
+    post.type === 'school'
+  ).length;
+
+  const isScopeExpanded = activeTab === 'school' && schoolPostsCount < 3;
+
   // Filter posts based on: 1) Active Tab, 2) Category sub-filter, 3) not deleted by Admin (isBanned === false)
   const filteredPosts = posts.filter(post => {
     // 1. Ban status
@@ -34,8 +44,17 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
 
     // 3. Tab filter
     if (activeTab === 'school') {
-      if (post.schoolName !== currentUser.schoolName) return false;
-      if (post.type !== 'school') return false;
+      if (isScopeExpanded) {
+        // 가변 피드 스코프 확장: 유저 구/군(예: 서초구) 추출 후 동일 구/군 학교 글까지 매핑
+        const userDistrict = currentUser.region ? currentUser.region.split(' ')[1] : '';
+        const isSameDistrict = userDistrict && post.region && post.region.includes(userDistrict);
+        
+        if (post.schoolName !== currentUser.schoolName && !isSameDistrict) return false;
+        if (post.type !== 'school') return false;
+      } else {
+        if (post.schoolName !== currentUser.schoolName) return false;
+        if (post.type !== 'school') return false;
+      }
     } else if (activeTab === 'region') {
       if (post.region !== currentUser.region) return false;
       if (post.type !== 'region') return false;
@@ -163,6 +182,13 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
           {activeTab === 'all' && `🌐 전국 학부모 공유 광장`}
         </div>
 
+        {/* Scope expansion notice banner (UTIL-03.1) */}
+        {isScopeExpanded && (
+          <div className="scope-expansion-banner animate-fade-in">
+            📢 우리 학교 글이 부족하여 인근 <strong>{currentUser.region ? currentUser.region.split(' ')[1] || '지역' : '지역'}</strong> 소식을 함께 노출합니다.
+          </div>
+        )}
+
         {/* Post cards list */}
         {filteredPosts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 10px', color: 'var(--neutral-muted)', fontSize: '0.8rem' }}>
@@ -183,7 +209,10 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
                   <span className={`badge ${post.category === '자유' ? 'badge-indigo' : post.category === '질문' ? 'badge-gold' : 'badge-teal'}`}>
                     {post.category}
                   </span>
-                  <span className="post-author">{post.authorName}</span>
+                  {/* RSK-03: 전국 탭일 때만 법정동 지역명 마스킹 처리 */}
+                  <span className="post-author">
+                    {activeTab === 'all' ? maskPseudonym(post.authorName) : post.authorName}
+                  </span>
                 </div>
                 <span className="post-date">
                   {new Date(post.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { mockUsers, mockPosts, mockComments, mockReceipts } from '../data/mockInitialData';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
 export const AppStateContext = createContext();
 
@@ -11,23 +12,21 @@ const generatePseudonym = (region, schoolName, grade) => {
   const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
   const noun = nouns[Math.floor(Math.random() * nouns.length)];
   
-  // Extract school short name e.g. "서울반포초등학교" -> "반포초"
   let schoolShort = '';
   if (schoolName) {
     schoolShort = schoolName.replace('서울', '').replace('광주', '').replace('부산', '').replace('대구', '');
     if (schoolShort.length > 5) {
-      schoolShort = schoolShort.substring(0, 3) + schoolShort.slice(-2); // e.g. 와이즈만영재 -> 와이즈영재
+      schoolShort = schoolShort.substring(0, 3) + schoolShort.slice(-2);
     }
   }
   
-  // Format: [Region + SchoolShort + Grade + adj + noun]
   const regionShort = region ? region.trim() : '전국';
   const gradeShort = grade ? grade.replace('학년', '') : '';
   
   return `${regionShort} ${schoolShort}${gradeShort} ${adj}${noun}`;
 };
 
-// Check for toxic words / ad content (AI Filtering Simulation)
+// Check for toxic words / ad content & teacher sniping (AI Filtering Simulation)
 const runAIFilter = (title, content) => {
   const toxicKeywords = ['바보', '쓰레기', '광고', '선동', '벼락거지', '폭락', '폭등', '가짜', '사기', '개이득', '단톡방'];
   const foundKeywords = [];
@@ -38,6 +37,30 @@ const runAIFilter = (title, content) => {
       foundKeywords.push(word);
     }
   });
+
+  // RSK-01: 실시간 교사 저격어 필터링
+  const teacherKeywords = ['담임', '선생님', '선생', '교사'];
+  const critiqueKeywords = ['저격', '고발', '민원', '짜증', '무능', '고소', '학대', '폭행', '막말', '쓰레기', '꼰대', '괴롭'];
+  
+  let isTeacherSniped = false;
+  let foundTeacherWord = '';
+  let foundCritiqueWord = '';
+
+  teacherKeywords.forEach(tWord => {
+    if (checkText.includes(tWord)) {
+      critiqueKeywords.forEach(cWord => {
+        if (checkText.includes(cWord)) {
+          isTeacherSniped = true;
+          foundTeacherWord = tWord;
+          foundCritiqueWord = cWord;
+        }
+      });
+    }
+  });
+
+  if (isTeacherSniped) {
+    foundKeywords.push(`교사 저격 조합 우려: "${foundTeacherWord}" + "${foundCritiqueWord}"`);
+  }
   
   return {
     isFlagged: foundKeywords.length > 0,
@@ -79,7 +102,6 @@ export const AppStateProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : {};
   });
 
-  // --- NEW V2 STATES ---
   const calendarComments = comments.filter(c => c.postId && c.postId.startsWith('post-cal-'));
 
   const [subscribedEvents, setSubscribedEvents] = useState(() => {
@@ -94,21 +116,29 @@ export const AppStateProvider = ({ children }) => {
 
   const [activeNotification, setActiveNotification] = useState(null);
 
-  // Save to LocalStorage whenever states change
+  // --- V1/V2 LOCALSTORAGE SYNCS (Only runs when Supabase is NOT active) ---
   useEffect(() => {
-    localStorage.setItem('edu_users', JSON.stringify(users));
+    if (!isSupabaseConfigured) {
+      localStorage.setItem('edu_users', JSON.stringify(users));
+    }
   }, [users]);
 
   useEffect(() => {
-    localStorage.setItem('edu_posts', JSON.stringify(posts));
+    if (!isSupabaseConfigured) {
+      localStorage.setItem('edu_posts', JSON.stringify(posts));
+    }
   }, [posts]);
 
   useEffect(() => {
-    localStorage.setItem('edu_comments', JSON.stringify(comments));
+    if (!isSupabaseConfigured) {
+      localStorage.setItem('edu_comments', JSON.stringify(comments));
+    }
   }, [comments]);
 
   useEffect(() => {
-    localStorage.setItem('edu_receipts', JSON.stringify(receipts));
+    if (!isSupabaseConfigured) {
+      localStorage.setItem('edu_receipts', JSON.stringify(receipts));
+    }
   }, [receipts]);
 
   useEffect(() => {
@@ -127,13 +157,106 @@ export const AppStateProvider = ({ children }) => {
     localStorage.setItem('edu_notifications', JSON.stringify(notifications));
   }, [notifications]);
 
-  // Synchronize current user status (e.g. if banned by Admin, or points changed)
+  // --- SUPABASE AUTH SESSION LISTENER ---
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const user = session.user;
+        
+        try {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (error && error.code !== 'PGRST116') {
+            console.error('Supabase 프로필 로드 실패:', error);
+            return;
+          }
+
+          let dbUser = null;
+          if (!profile) {
+            // New user automatic setup
+            const name = user.user_metadata?.full_name || '구글 사용자';
+            const newProfile = {
+              id: user.id,
+              email: user.email || '',
+              points: 1000,
+              verified_academy: [],
+              pseudonym: ''
+            };
+            
+            const { error: insertErr } = await supabase
+              .from('profiles')
+              .insert(newProfile);
+
+            if (insertErr) {
+              console.error('Supabase 신규 프로필 생성 실패:', insertErr);
+            } else {
+              dbUser = {
+                uid: user.id,
+                email: user.email,
+                name,
+                schoolName: '',
+                schoolLevel: '',
+                grade: '',
+                region: '',
+                pseudonym: '',
+                points: 1000,
+                isBanned: false,
+                verifiedAcademy: [],
+                createdAt: new Date().toISOString()
+              };
+            }
+          } else {
+            dbUser = {
+              uid: profile.id,
+              email: profile.email,
+              name: user.user_metadata?.full_name || '구글 사용자',
+              schoolName: profile.school_name || '',
+              schoolLevel: profile.school_level || '',
+              grade: profile.grade || '',
+              region: profile.region || '',
+              pseudonym: profile.pseudonym || '',
+              points: profile.points,
+              isBanned: profile.is_banned,
+              verifiedAcademy: profile.verified_academy || [],
+              createdAt: profile.created_at
+            };
+          }
+
+          if (dbUser) {
+            setUsers(prev => {
+              const exists = prev.some(u => u.uid === dbUser.uid);
+              if (exists) {
+                return prev.map(u => u.uid === dbUser.uid ? dbUser : u);
+              }
+              return [dbUser, ...prev];
+            });
+            setCurrentUser(dbUser);
+          }
+        } catch (err) {
+          console.error('Supabase Auth 변경 처리 오류:', err);
+        }
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [isSupabaseConfigured]);
+
+  // Synchronize current user status
   useEffect(() => {
     if (currentUser) {
       const freshUser = users.find(u => u.uid === currentUser.uid);
       if (freshUser) {
         if (freshUser.isBanned) {
-          // Instantly log out the user if they got banned
           setCurrentUser(null);
           alert('해당 계정은 관리자에 의해 이용 정지(Ban)되었습니다.');
         } else if (JSON.stringify(freshUser) !== JSON.stringify(currentUser)) {
@@ -143,9 +266,118 @@ export const AppStateProvider = ({ children }) => {
     }
   }, [users, currentUser]);
 
+  // --- SUPABASE DATA HYDRATION ---
+  useEffect(() => {
+    const fetchSupabaseData = async () => {
+      if (!isSupabaseConfigured) return;
+
+      try {
+        // 1. Fetch profiles -> users
+        const { data: profilesData } = await supabase.from('profiles').select('*');
+        if (profilesData) {
+          setUsers(profilesData.map(p => ({
+            uid: p.id,
+            email: p.email,
+            schoolName: p.school_name || '',
+            schoolLevel: p.school_level || '',
+            grade: p.grade || '',
+            region: p.region || '',
+            pseudonym: p.pseudonym || '',
+            points: p.points,
+            isBanned: p.is_banned,
+            verifiedAcademy: p.verified_academy || [],
+            createdAt: p.created_at
+          })));
+        }
+
+        // 2. Fetch posts
+        const { data: postsData } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+        if (postsData) {
+          setPosts(postsData.map(p => ({
+            id: p.id,
+            authorUid: p.author_uid,
+            authorName: p.author_name,
+            category: p.category,
+            title: p.title,
+            content: p.content,
+            schoolName: p.school_name || '',
+            region: p.region || '',
+            type: p.type,
+            likes: p.likes,
+            likedBy: p.liked_by || [],
+            scraps: p.scraps,
+            scrapedBy: p.scraped_by || [],
+            reports: p.reports,
+            reportedBy: p.reported_by || [],
+            commentsCount: p.comments_count,
+            isAiFlaged: p.is_ai_flagged,
+            aiFlagReason: p.ai_flag_reason || '',
+            isBanned: p.is_banned,
+            createdAt: p.created_at,
+            hasReceiptBadge: p.has_receipt_badge,
+            qnaPoints: p.qna_points,
+            qnaResolved: p.qna_resolved,
+            pollOptions: p.poll_options
+          })));
+        }
+
+        // 3. Fetch comments
+        const { data: commentsData } = await supabase.from('comments').select('*');
+        if (commentsData) {
+          setComments(commentsData.map(c => ({
+            id: c.id,
+            postId: c.post_id,
+            authorUid: c.author_uid,
+            authorName: c.author_name,
+            content: c.content,
+            createdAt: c.created_at,
+            isAccepted: c.is_accepted,
+            grade: c.grade || '',
+            isBanned: c.is_banned
+          })));
+        }
+
+        // 4. Fetch receipts
+        const { data: receiptsData } = await supabase.from('receipts').select('*').order('created_at', { ascending: false });
+        if (receiptsData) {
+          setReceipts(receiptsData.map(r => ({
+            id: r.id,
+            userUid: r.user_uid,
+            userName: r.user_name,
+            userPseudonym: r.user_pseudonym,
+            academyName: r.academy_name,
+            date: r.date,
+            amount: r.amount,
+            amountStr: r.amount_str,
+            ocrData: r.ocr_data || {},
+            status: r.status,
+            reviewerMemo: r.reviewer_memo || '',
+            createdAt: r.created_at,
+            reviewedAt: r.reviewed_at || ''
+          })));
+        }
+      } catch (err) {
+        console.error('Supabase 데이터 로드 실패:', err);
+      }
+    };
+
+    fetchSupabaseData();
+  }, [isSupabaseConfigured]);
+
   // RESET ALL DATA TO INITIAL STATS
-  const resetToFactoryDefaults = () => {
+  const resetToFactoryDefaults = async () => {
     if (window.confirm('모든 데이터를 초기 기본 상태로 리셋하시겠습니까?')) {
+      if (isSupabaseConfigured) {
+        try {
+          // Clear Supabase tables
+          await supabase.from('comments').delete().neq('id', '');
+          await supabase.from('posts').delete().neq('id', '');
+          await supabase.from('receipts').delete().neq('id', '');
+          await supabase.from('profiles').delete().neq('id', '');
+        } catch (err) {
+          console.error('Supabase 데이터 초기화 실패:', err);
+        }
+      }
       localStorage.clear();
       setUsers(mockUsers);
       setPosts(mockPosts);
@@ -153,7 +385,6 @@ export const AppStateProvider = ({ children }) => {
       setReceipts(mockReceipts);
       setCurrentUser(null);
       setCustomCalendarEvents({});
-      setCalendarComments([]);
       setSubscribedEvents(['cal-bp-04']);
       setNotifications([]);
       setActiveNotification(null);
@@ -173,7 +404,7 @@ export const AppStateProvider = ({ children }) => {
     return true;
   };
 
-  const loginCustomEmail = (name, email) => {
+  const loginCustomEmail = async (name, email) => {
     const existing = users.find(u => u.email === email);
     if (existing) {
       if (existing.isBanned) {
@@ -185,8 +416,9 @@ export const AppStateProvider = ({ children }) => {
     }
 
     // Register a new user
+    const newUid = `google-user-${Date.now()}`;
     const newUser = {
-      uid: `google-user-${Date.now()}`,
+      uid: newUid,
       email,
       name,
       schoolName: '',
@@ -194,26 +426,80 @@ export const AppStateProvider = ({ children }) => {
       grade: '',
       region: '',
       pseudonym: '',
-      points: 1000, // Welcome points
+      points: 1000,
       isBanned: false,
       verifiedAcademy: [],
       createdAt: new Date().toISOString(),
     };
     
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('profiles').insert({
+          id: newUid,
+          email,
+          points: 1000,
+          verified_academy: []
+        });
+      } catch (err) {
+        console.error('Supabase 회원등록 실패:', err);
+      }
+    }
+
     setUsers(prev => [newUser, ...prev]);
     setCurrentUser(newUser);
     return true;
   };
 
-  const logout = () => {
+  // Google OAuth actual Sign In
+  const loginWithGoogle = async () => {
+    if (!isSupabaseConfigured) {
+      alert('Supabase 환경 변수가 설정되지 않았습니다. 로컬 시뮬레이션 로그인을 이용해 주세요.');
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error('Google 로그인 오류:', err);
+      alert(`구글 로그인 실패: ${err.message}`);
+    }
+  };
+
+  const logout = async () => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error('Supabase 로그아웃 오류:', err);
+      }
+    }
     setCurrentUser(null);
   };
 
-  const completeProfileSetup = (schoolName, schoolLevel, grade, region) => {
+  const completeProfileSetup = async (schoolName, schoolLevel, grade, region) => {
     if (!currentUser) return;
     
     const pseudonym = generatePseudonym(region, schoolName, grade);
     
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('profiles').update({
+          school_name: schoolName,
+          school_level: schoolLevel,
+          grade,
+          region,
+          pseudonym
+        }).eq('id', currentUser.uid);
+      } catch (err) {
+        console.error('Supabase 프로필 업데이트 실패:', err);
+      }
+    }
+
     setUsers(prev => prev.map(u => {
       if (u.uid === currentUser.uid) {
         return { ...u, schoolName, schoolLevel, grade, region, pseudonym };
@@ -232,21 +518,22 @@ export const AppStateProvider = ({ children }) => {
   };
 
   // 3. Community Feed Actions
-  const createPost = (title, content, category, type, options = {}) => {
+  const createPost = async (title, content, category, type, options = {}) => {
     if (!currentUser) return null;
 
     const filterResult = runAIFilter(title, content);
+    const newPostId = `post-${Date.now()}`;
 
     const newPost = {
-      id: `post-${Date.now()}`,
+      id: newPostId,
       authorUid: currentUser.uid,
       authorName: currentUser.pseudonym || '익명 학부모',
-      category, // '자유', '질문', '리뷰'
+      category,
       title,
       content,
       schoolName: currentUser.schoolName,
       region: currentUser.region,
-      type, // 'school', 'region', 'all'
+      type,
       likes: 0,
       likedBy: [],
       scraps: 0,
@@ -264,7 +551,6 @@ export const AppStateProvider = ({ children }) => {
       pollOptions: options.pollOptions ? options.pollOptions.map(opt => ({ text: opt, votes: 0, votedUids: [] })) : null,
     };
 
-    // Deduct Q&A points if user set points for questions
     if (newPost.qnaPoints > 0) {
       if (currentUser.points < newPost.qnaPoints) {
         alert('포인트가 부족하여 Q&A 채택 포인트를 설정할 수 없습니다.');
@@ -273,48 +559,113 @@ export const AppStateProvider = ({ children }) => {
       updateUserPointsLocally(currentUser.uid, -newPost.qnaPoints);
     }
 
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('posts').insert({
+          id: newPostId,
+          author_uid: newPost.authorUid,
+          author_name: newPost.authorName,
+          category: newPost.category,
+          title: newPost.title,
+          content: newPost.content,
+          school_name: newPost.schoolName,
+          region: newPost.region,
+          type: newPost.type,
+          is_ai_flagged: newPost.isAiFlaged,
+          ai_flag_reason: newPost.aiFlagReason,
+          has_receipt_badge: newPost.hasReceiptBadge,
+          qna_points: newPost.qnaPoints,
+          poll_options: newPost.pollOptions
+        });
+      } catch (err) {
+        console.error('Supabase 포스트 업로드 실패:', err);
+      }
+    }
+
     setPosts(prev => [newPost, ...prev]);
     return newPost;
   };
 
-  const deletePost = (postId) => {
+  const deletePost = async (postId) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('posts').update({ is_banned: true }).eq('id', postId);
+      } catch (err) {
+        console.error('Supabase 포스트 밴 실패:', err);
+      }
+    }
     setPosts(prev => prev.map(p => p.id === postId ? { ...p, isBanned: true } : p));
   };
 
-  const restorePost = (postId) => {
+  const restorePost = async (postId) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('posts').update({ is_banned: false, is_ai_flagged: false, reports: 0, reported_by: [] }).eq('id', postId);
+      } catch (err) {
+        console.error('Supabase 포스트 복구 실패:', err);
+      }
+    }
     setPosts(prev => prev.map(p => p.id === postId ? { ...p, isAiFlaged: false, isBanned: false, reports: 0, reportedBy: [] } : p));
   };
 
-  const toggleLikePost = (postId) => {
+  const toggleLikePost = async (postId) => {
     if (!currentUser) return;
+    
+    let nextLikedBy = [];
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         const hasLiked = p.likedBy.includes(currentUser.uid);
-        const likedBy = hasLiked 
+        nextLikedBy = hasLiked 
           ? p.likedBy.filter(uid => uid !== currentUser.uid) 
           : [...p.likedBy, currentUser.uid];
-        return { ...p, likes: likedBy.length, likedBy };
+        return { ...p, likes: nextLikedBy.length, likedBy: nextLikedBy };
       }
       return p;
     }));
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('posts').update({
+          likes: nextLikedBy.length,
+          liked_by: nextLikedBy
+        }).eq('id', postId);
+      } catch (err) {
+        console.error('Supabase 좋아요 업데이트 실패:', err);
+      }
+    }
   };
 
-  const toggleScrapPost = (postId) => {
+  const toggleScrapPost = async (postId) => {
     if (!currentUser) return;
+
+    let nextScrapedBy = [];
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         const hasScraped = p.scrapedBy.includes(currentUser.uid);
-        const scrapedBy = hasScraped 
+        nextScrapedBy = hasScraped 
           ? p.scrapedBy.filter(uid => uid !== currentUser.uid) 
           : [...p.scrapedBy, currentUser.uid];
-        return { ...p, scraps: scrapedBy.length, scrapedBy };
+        return { ...p, scraps: nextScrapedBy.length, scrapedBy: nextScrapedBy };
       }
       return p;
     }));
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('posts').update({
+          scraps: nextScrapedBy.length,
+          scraped_by: nextScrapedBy
+        }).eq('id', postId);
+      } catch (err) {
+        console.error('Supabase 스크랩 업데이트 실패:', err);
+      }
+    }
   };
 
-  const reportPost = (postId, reason) => {
+  const reportPost = async (postId, reason) => {
     if (!currentUser) return;
+    
+    let updatedPost = null;
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         if (p.reportedBy.includes(currentUser.uid)) {
@@ -323,25 +674,39 @@ export const AppStateProvider = ({ children }) => {
         }
         const reportedBy = [...p.reportedBy, currentUser.uid];
         const reports = reportedBy.length;
-        // Auto-blind if reports reach 3
         const isAiFlaged = p.isAiFlaged || reports >= 3;
         const aiFlagReason = p.isAiFlaged 
           ? p.aiFlagReason 
           : (reports >= 3 ? '사용자 누적 신고 3회 이상' : p.aiFlagReason);
         
+        updatedPost = { ...p, reports, reportedBy, isAiFlaged, aiFlagReason };
         alert('신고가 접수되었습니다. 관리자 확인 후 처리됩니다.');
-        return { ...p, reports, reportedBy, isAiFlaged, aiFlagReason };
+        return updatedPost;
       }
       return p;
     }));
+
+    if (isSupabaseConfigured && updatedPost) {
+      try {
+        await supabase.from('posts').update({
+          reports: updatedPost.reports,
+          reported_by: updatedPost.reportedBy,
+          is_ai_flagged: updatedPost.isAiFlaged,
+          ai_flag_reason: updatedPost.aiFlagReason
+        }).eq('id', postId);
+      } catch (err) {
+        console.error('Supabase 신고 업데이트 실패:', err);
+      }
+    }
   };
 
-  const votePoll = (postId, optionIndex) => {
+  const votePoll = async (postId, optionIndex) => {
     if (!currentUser) return;
+    
+    let updatedPoll = null;
     setPosts(prev => prev.map(p => {
       if (p.id === postId && p.pollOptions) {
-        const updatedPoll = p.pollOptions.map((opt, idx) => {
-          // Remove from other options first, then add to the selected option if not already voted
+        updatedPoll = p.pollOptions.map((opt, idx) => {
           const hasVotedThis = opt.votedUids.includes(currentUser.uid);
           let votedUids = opt.votedUids.filter(uid => uid !== currentUser.uid);
           if (idx === optionIndex && !hasVotedThis) {
@@ -357,13 +722,24 @@ export const AppStateProvider = ({ children }) => {
       }
       return p;
     }));
+
+    if (isSupabaseConfigured && updatedPoll) {
+      try {
+        await supabase.from('posts').update({
+          poll_options: updatedPoll
+        }).eq('id', postId);
+      } catch (err) {
+        console.error('Supabase 투표 갱신 실패:', err);
+      }
+    }
   };
 
   // 4. Comments & Q&A
-  const addComment = (postId, content, grade = null, authorOverrides = null) => {
+  const addComment = async (postId, content, grade = null, authorOverrides = null) => {
     if (!currentUser) return;
+    const newCommentId = `comment-${Date.now()}`;
     const newComment = {
-      id: `comment-${Date.now()}`,
+      id: newCommentId,
       postId,
       authorUid: authorOverrides ? authorOverrides.uid : currentUser.uid,
       authorName: authorOverrides ? authorOverrides.pseudonym : (currentUser.pseudonym || '익명 학부모'),
@@ -374,12 +750,34 @@ export const AppStateProvider = ({ children }) => {
       isBanned: false
     };
 
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('comments').insert({
+          id: newCommentId,
+          post_id: postId,
+          author_uid: newComment.authorUid,
+          author_name: newComment.authorName,
+          content,
+          grade: newComment.grade
+        });
+
+        const targetPost = posts.find(p => p.id === postId);
+        if (targetPost) {
+          await supabase.from('posts').update({
+            comments_count: targetPost.commentsCount + 1
+          }).eq('id', postId);
+        }
+      } catch (err) {
+        console.error('Supabase 댓글 추가 실패:', err);
+      }
+    }
+
     setComments(prev => [...prev, newComment]);
     setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p));
     return newComment;
   };
 
-  const acceptComment = (postId, commentId) => {
+  const acceptComment = async (postId, commentId) => {
     if (!currentUser) return;
     
     const post = posts.find(p => p.id === postId);
@@ -388,11 +786,18 @@ export const AppStateProvider = ({ children }) => {
     const comment = comments.find(c => c.id === commentId);
     if (!comment) return;
 
-    // Set Resolved and Accepted
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('comments').update({ is_accepted: true }).eq('id', commentId);
+        await supabase.from('posts').update({ qna_resolved: true }).eq('id', postId);
+      } catch (err) {
+        console.error('Supabase 채택 업데이트 실패:', err);
+      }
+    }
+
     setComments(prev => prev.map(c => c.id === commentId ? { ...c, isAccepted: true } : c));
     setPosts(prev => prev.map(p => p.id === postId ? { ...p, qnaResolved: true } : p));
 
-    // Pay points to commenter
     if (post.qnaPoints > 0) {
       updateUserPointsLocally(comment.authorUid, post.qnaPoints);
       alert(`답변이 채택되었습니다! 작성자에게 ${post.qnaPoints}P가 지급되었습니다.`);
@@ -400,13 +805,27 @@ export const AppStateProvider = ({ children }) => {
   };
 
   // 5. OCR & Receipt Authentication
-  const submitReceipt = (academyName, date, amountStr, templateId) => {
+  const submitReceipt = async (academyName, date, amountStr, templateId) => {
     if (!currentUser) return;
 
     const numericAmount = parseInt(amountStr.replace(/[^0-9]/g, '')) || 0;
+
+    // OCR 텍스트 조합 (학원명 + 결제일시 + 결제금액) 중복 검사 (RSK-04 확장)
+    const isDuplicate = receipts.some(r => 
+      r.academyName.trim() === academyName.trim() && 
+      r.date.trim() === date.trim() && 
+      r.amount === numericAmount
+    );
+
+    if (isDuplicate) {
+      alert('⚠️ 어뷰징 방지 경고:\n이미 등록되었거나 심사 대기 중인 동일한 영수증 내역(학원명, 결제일시, 금액 일치)이 존재합니다.');
+      return;
+    }
+
+    const newReceiptId = `rcpt-${Date.now()}`;
     
     const newReceipt = {
-      id: `rcpt-${Date.now()}`,
+      id: newReceiptId,
       userUid: currentUser.uid,
       userName: currentUser.name,
       userPseudonym: currentUser.pseudonym,
@@ -424,25 +843,62 @@ export const AppStateProvider = ({ children }) => {
       createdAt: new Date().toISOString(),
     };
 
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('receipts').insert({
+          id: newReceiptId,
+          user_uid: newReceipt.userUid,
+          user_name: newReceipt.userName,
+          user_pseudonym: newReceipt.userPseudonym,
+          academy_name: newReceipt.academyName,
+          date: newReceipt.date,
+          amount: newReceipt.amount,
+          amount_str: newReceipt.amountStr,
+          ocr_data: newReceipt.ocrData
+        });
+      } catch (err) {
+        console.error('Supabase 영수증 제출 실패:', err);
+      }
+    }
+
     setReceipts(prev => [newReceipt, ...prev]);
     alert('영수증 인증 검증 요청이 전송되었습니다. 관리자 승인 후 확인 가능합니다.');
   };
 
   // 6. Admin Panel Modifiers
-  const approveReceipt = (receiptId) => {
+  const approveReceipt = async (receiptId) => {
     const rcpt = receipts.find(r => r.id === receiptId);
     if (!rcpt) return;
 
+    const targetUser = users.find(u => u.uid === rcpt.userUid);
+    const currentAcademies = targetUser ? (targetUser.verifiedAcademy || []) : [];
+    const nextAcademies = currentAcademies.includes(rcpt.academyName) ? currentAcademies : [...currentAcademies, rcpt.academyName];
+    const nextPoints = (targetUser ? targetUser.points : 0) + 5000;
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('receipts').update({
+          status: 'approved',
+          reviewer_memo: '관리자 최종 승인 완료',
+          reviewed_at: new Date().toISOString()
+        }).eq('id', receiptId);
+
+        await supabase.from('profiles').update({
+          points: nextPoints,
+          verified_academy: nextAcademies
+        }).eq('id', rcpt.userUid);
+      } catch (err) {
+        console.error('Supabase 영수증 승인 실패:', err);
+      }
+    }
+
     setReceipts(prev => prev.map(r => r.id === receiptId ? { ...r, status: 'approved', reviewedAt: new Date().toISOString(), reviewerMemo: '관리자 최종 승인 완료' } : r));
     
-    // Add verified academy badge to the user & award points (+5000P)
     setUsers(prev => prev.map(u => {
       if (u.uid === rcpt.userUid) {
-        const academies = u.verifiedAcademy || [];
-        const nextAcademies = academies.includes(rcpt.academyName) ? academies : [...academies, rcpt.academyName];
         return {
           ...u,
-          points: u.points + 5000,
+          points: nextPoints,
           verifiedAcademy: nextAcademies
         };
       }
@@ -450,23 +906,55 @@ export const AppStateProvider = ({ children }) => {
     }));
   };
 
-  const rejectReceipt = (receiptId, memo) => {
+  const rejectReceipt = async (receiptId, memo) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('receipts').update({
+          status: 'rejected',
+          reviewer_memo: memo || '서류 불충분으로 반려',
+          reviewed_at: new Date().toISOString()
+        }).eq('id', receiptId);
+      } catch (err) {
+        console.error('Supabase 영수증 반려 실패:', err);
+      }
+    }
     setReceipts(prev => prev.map(r => r.id === receiptId ? { ...r, status: 'rejected', reviewedAt: new Date().toISOString(), reviewerMemo: memo || '서류 불충분으로 반려' } : r));
   };
 
-  const banUser = (uid) => {
+  const banUser = async (uid) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('profiles').update({ is_banned: true }).eq('id', uid);
+      } catch (err) {
+        console.error('Supabase 유저 밴 실패:', err);
+      }
+    }
     setUsers(prev => prev.map(u => u.uid === uid ? { ...u, isBanned: true } : u));
   };
 
-  const unbanUser = (uid) => {
+  const unbanUser = async (uid) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('profiles').update({ is_banned: false }).eq('id', uid);
+      } catch (err) {
+        console.error('Supabase 유저 밴 해제 실패:', err);
+      }
+    }
     setUsers(prev => prev.map(u => u.uid === uid ? { ...u, isBanned: false } : u));
   };
 
-  const updateUserGrade = (uid, newGrade) => {
+  const updateUserGrade = async (uid, newGrade) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('profiles').update({ grade: newGrade }).eq('id', uid);
+      } catch (err) {
+        console.error('Supabase 학년 업데이트 실패:', err);
+      }
+    }
     setUsers(prev => prev.map(u => u.uid === uid ? { ...u, grade: newGrade } : u));
   };
 
-  const updateUserPoints = (uid, deltaPoints) => {
+  const updateUserPoints = async (uid, deltaPoints) => {
     updateUserPointsLocally(uid, deltaPoints);
   };
 
@@ -475,7 +963,7 @@ export const AppStateProvider = ({ children }) => {
       id: `cal-custom-${Date.now()}`,
       title,
       date,
-      type, // 'holiday', 'event', 'exam'
+      type,
       memo
     };
 
@@ -488,50 +976,65 @@ export const AppStateProvider = ({ children }) => {
     });
   };
 
-  // --- NEW V2 ACTIONS ---
-  const ensureSyncedPostExists = (schoolName, eventId, eventTitle) => {
+  const ensureSyncedPostExists = async (schoolName, eventId, eventTitle) => {
     if (!currentUser) return;
     const syncPostId = `post-cal-${eventId}`;
-    setPosts(prev => {
-      if (prev.some(p => p.id === syncPostId)) return prev;
+    
+    const exists = posts.some(p => p.id === syncPostId);
+    if (exists) return;
 
-      const newSyncPost = {
-        id: syncPostId,
-        authorUid: 'system',
-        authorName: '학사일정 알리미',
-        category: '자유',
-        title: `[학사일정] ${eventTitle}`,
-        content: `[${schoolName}]의 학사일정 [${eventTitle}] 에 대한 학부모 익명 소통방입니다. 준비물, 학원 보강 일정 등 다양한 이야기를 나눠보세요.\n\n* 이 글은 학사 캘린더 일정과 실시간 연동됩니다.`,
-        schoolName,
-        region: currentUser.region || '반포동',
-        type: 'school',
-        likes: 3,
-        likedBy: [],
-        scraps: 1,
-        scrapedBy: [],
-        reports: 0,
-        reportedBy: [],
-        commentsCount: 0,
-        isAiFlaged: false,
-        isBanned: false,
-        createdAt: new Date().toISOString(),
-      };
-      return [newSyncPost, ...prev];
-    });
+    const newSyncPost = {
+      id: syncPostId,
+      authorUid: 'system',
+      authorName: '학사일정 알리미',
+      category: '자유',
+      title: `[학사일정] ${eventTitle}`,
+      content: `[${schoolName}]의 학사일정 [${eventTitle}] 에 대한 학부모 익명 소통방입니다. 준비물, 학원 보강 일정 등 다양한 이야기를 나눠보세요.\n\n* 이 글은 학사 캘린더 일정과 실시간 연동됩니다.`,
+      schoolName,
+      region: currentUser.region || '반포동',
+      type: 'school',
+      likes: 3,
+      likedBy: [],
+      scraps: 1,
+      scrapedBy: [],
+      reports: 0,
+      reportedBy: [],
+      commentsCount: 0,
+      isAiFlaged: false,
+      isBanned: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('posts').insert({
+          id: syncPostId,
+          author_uid: newSyncPost.authorUid,
+          author_name: newSyncPost.authorName,
+          category: newSyncPost.category,
+          title: newSyncPost.title,
+          content: newSyncPost.content,
+          school_name: newSyncPost.schoolName,
+          region: newSyncPost.region,
+          type: newSyncPost.type,
+          likes: newSyncPost.likes
+        });
+      } catch (err) {
+        console.error('Supabase 학사 포스트 추가 실패:', err);
+      }
+    }
+
+    setPosts(prev => [newSyncPost, ...prev]);
   };
 
   const addCalendarComment = (schoolName, eventId, eventTitle, content, grade) => {
     if (!currentUser) return;
     const syncPostId = `post-cal-${eventId}`;
     
-    // Ensure synced post exists first
     ensureSyncedPostExists(schoolName, eventId, eventTitle);
-
-    // Save as standard comment under syncPostId
     addComment(syncPostId, content, grade);
 
-    // BOT REPLY SIMULATION (UTIL-02)
-    // When the user posts a comment, trigger a bot reply after 2.5 seconds.
+    // 가상 학부모 자동 봇 댓글 시뮬레이션
     setTimeout(() => {
       const botNames = ['반포초5 명랑한코끼리', '대치초3 명석한사자', '센텀초4 민첩한토끼', '대청중2 냉철한기린'];
       const botReplies = [
@@ -550,7 +1053,6 @@ export const AppStateProvider = ({ children }) => {
 
       addComment(syncPostId, botReplies[randomIdx], botProfile.grade, botProfile);
 
-      // Read current subscribed events inside timeout from fresh localstorage to avoid closure problems
       const freshSubscribed = JSON.parse(localStorage.getItem('edu_subscribed_events') || '[]');
       if (freshSubscribed.includes(eventId)) {
         const newNotif = {
@@ -565,7 +1067,6 @@ export const AppStateProvider = ({ children }) => {
         setNotifications(prev => [newNotif, ...prev]);
         setActiveNotification(newNotif);
 
-        // Slide away after 4 seconds
         setTimeout(() => {
           setActiveNotification(null);
         }, 4000);
@@ -573,11 +1074,25 @@ export const AppStateProvider = ({ children }) => {
     }, 2500);
   };
 
-  const deleteCalendarComment = (commentId) => {
+  const deleteCalendarComment = async (commentId) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('comments').update({ is_banned: true }).eq('id', commentId);
+      } catch (err) {
+        console.error('Supabase 댓글 밴 실패:', err);
+      }
+    }
     setComments(prev => prev.map(c => c.id === commentId ? { ...c, isBanned: true } : c));
   };
 
-  const restoreCalendarComment = (commentId) => {
+  const restoreCalendarComment = async (commentId) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('comments').update({ is_banned: false }).eq('id', commentId);
+      } catch (err) {
+        console.error('Supabase 댓글 복구 실패:', err);
+      }
+    }
     setComments(prev => prev.map(c => c.id === commentId ? { ...c, isBanned: false } : c));
   };
 
@@ -597,11 +1112,20 @@ export const AppStateProvider = ({ children }) => {
     setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
   };
 
-  // Helper inside context
-  const updateUserPointsLocally = (uid, amount) => {
+  const updateUserPointsLocally = async (uid, amount) => {
+    const targetUser = users.find(u => u.uid === uid);
+    const nextPoints = Math.max(0, (targetUser ? targetUser.points : 0) + amount);
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('profiles').update({ points: nextPoints }).eq('id', uid);
+      } catch (err) {
+        console.error('Supabase 포인트 갱신 실패:', err);
+      }
+    }
+
     setUsers(prev => prev.map(u => {
       if (u.uid === uid) {
-        const nextPoints = Math.max(0, u.points + amount);
         return { ...u, points: nextPoints };
       }
       return u;
@@ -623,6 +1147,7 @@ export const AppStateProvider = ({ children }) => {
       resetToFactoryDefaults,
       loginWithMockAccount,
       loginCustomEmail,
+      loginWithGoogle,
       logout,
       completeProfileSetup,
       createPost,
