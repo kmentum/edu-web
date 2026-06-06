@@ -116,7 +116,7 @@ export const AppStateProvider = ({ children }) => {
 
   const [subscribedEvents, setSubscribedEvents] = useState(() => {
     const saved = localStorage.getItem('edu_subscribed_events');
-    return saved ? JSON.parse(saved) : ['cal-bp-04'];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [notifications, setNotifications] = useState(() => {
@@ -400,7 +400,7 @@ export const AppStateProvider = ({ children }) => {
       setReceipts(mockReceipts);
       setCurrentUser(null);
       setCustomCalendarEvents({});
-      setSubscribedEvents(['cal-bp-04']);
+      setSubscribedEvents([]);
       setNotifications([]);
       setActiveNotification(null);
       window.location.reload();
@@ -1117,9 +1117,9 @@ export const AppStateProvider = ({ children }) => {
       schoolName,
       region: currentUser.region || '반포동',
       type: 'school',
-      likes: 3,
+      likes: 0,
       likedBy: [],
-      scraps: 1,
+      scraps: 0,
       scrapedBy: [],
       reports: 0,
       reportedBy: [],
@@ -1157,45 +1157,6 @@ export const AppStateProvider = ({ children }) => {
     
     ensureSyncedPostExists(schoolName, eventId, eventTitle);
     addComment(syncPostId, content, grade);
-
-    // 가상 학부모 자동 봇 댓글 시뮬레이션
-    setTimeout(() => {
-      const botNames = ['반포초5 명랑한코끼리', '대치초3 명석한사자', '센텀초4 민첩한토끼', '대청중2 냉철한기린'];
-      const botReplies = [
-        '좋은 정보 공유해 주셔서 정말 감사합니다! 정보 찾아보고 있었는데 큰 도움이 되네요.',
-        '저희 아이도 이번 학기 같이 보내는데 신경 쓸 게 참 많네요 ㅠㅠ 교재는 어떤 것 준비하시나요?',
-        '이 일정 관련해서 다른 주말 학원 보강 스케줄도 다 조정해 두었습니다. 다들 파이팅입니다!',
-        '학사 일정 대화방이 활성화되니 실시간 교차 정보 교환이 가능해서 마음이 한결 놓입니다.'
-      ];
-
-      const randomIdx = Math.floor(Math.random() * botNames.length);
-      const botProfile = {
-        uid: 'bot-user',
-        pseudonym: botNames[randomIdx],
-        grade: currentUser.grade || '5학년'
-      };
-
-      addComment(syncPostId, botReplies[randomIdx], botProfile.grade, botProfile);
-
-      const freshSubscribed = JSON.parse(localStorage.getItem('edu_subscribed_events') || '[]');
-      if (freshSubscribed.includes(eventId)) {
-        const newNotif = {
-          id: `notif-${Date.now()}`,
-          eventId,
-          eventTitle,
-          text: `🔔 [${eventTitle}] 일정에 새 댓글이 등록되었습니다: "${botReplies[randomIdx].substring(0, 18)}..."`,
-          time: new Date().toISOString(),
-          unread: true
-        };
-
-        setNotifications(prev => [newNotif, ...prev]);
-        setActiveNotification(newNotif);
-
-        setTimeout(() => {
-          setActiveNotification(null);
-        }, 4000);
-      }
-    }, 2500);
   };
 
   const deleteCalendarComment = async (commentId) => {
@@ -1220,7 +1181,11 @@ export const AppStateProvider = ({ children }) => {
     setComments(prev => prev.map(c => c.id === commentId ? { ...c, isBanned: false } : c));
   };
 
-  const toggleSubscribeEvent = (eventId) => {
+  const toggleSubscribeEvent = (schoolName, eventId, eventTitle) => {
+    const isSubscribing = !subscribedEvents.includes(eventId);
+    if (isSubscribing) {
+      ensureSyncedPostExists(schoolName, eventId, eventTitle);
+    }
     setSubscribedEvents(prev => {
       const next = prev.includes(eventId) ? prev.filter(id => id !== eventId) : [...prev, eventId];
       localStorage.setItem('edu_subscribed_events', JSON.stringify(next));
