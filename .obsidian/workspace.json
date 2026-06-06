@@ -185,6 +185,8 @@
   },
   "active": "7a3236317b4accc5",
   "lastOpenFiles": [
+    "android/app/src/main/assets/public/assets/index-Dq6j2AgF.js",
+    "dist/assets/index-Dq6j2AgF.js",
     "node_modules/globby/readme.md",
     "node_modules/email-addresses/test/tests.xml",
     "node_modules/email-addresses/test/is_email.js",
@@ -195,7 +197,6 @@
     "node_modules/email-addresses/lib/email-addresses.d.ts",
     "node_modules/email-addresses/lib",
     "node_modules/email-addresses/LICENSE",
-    "node_modules/find-cache-dir/license",
     "node_modules/fast-glob/node_modules/glob-parent/README.md",
     "node_modules/fast-glob/node_modules/glob-parent/CHANGELOG.md",
     "node_modules/fast-glob/README.md",
@@ -220,7 +221,6 @@
     "node_modules/p-try/readme.md",
     "node_modules/is-number/README.md",
     "node_modules/queue-microtask/README.md",
-    "node_modules/to-regex-range/README.md",
     "node_modules/@supabase/phoenix/priv/static/phoenix.png",
     "node_modules/@supabase/phoenix/priv/static/phoenix-orange.png"
   ]
