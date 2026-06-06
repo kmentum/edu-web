@@ -112,8 +112,19 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
   };
 
   const handleScroll = (e) => {
-    const scrollTop = e.currentTarget.scrollTop;
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     const lastScrollTop = lastScrollTopRef.current;
+    
+    // 모바일 스크롤 바운스 시 음수 또는 최대 스크롤 영역 초과 이벤트 무시
+    if (scrollTop < 0 || scrollTop + clientHeight > scrollHeight) {
+      return;
+    }
+
+    // 맨 아래 도달 50px 전부터는 헤더 가시성을 변경하지 않음 (헤더 변화로 인한 높이 싱크 무한루프 방지)
+    if (scrollTop + clientHeight >= scrollHeight - 50) {
+      lastScrollTopRef.current = scrollTop;
+      return;
+    }
     
     if (scrollTop <= 10) {
       setShowHeader(true);
