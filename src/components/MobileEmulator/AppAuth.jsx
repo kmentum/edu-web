@@ -3,84 +3,107 @@ import { AppStateContext } from '../../context/AppStateContext';
 import { isSupabaseConfigured } from '../../lib/supabaseClient';
 
 export const AppAuth = ({ onNavigate }) => {
-  const { users, loginWithMockAccount, loginCustomEmail, loginWithGoogle } = useContext(AppStateContext);
-  
-  const [customName, setCustomName] = useState('');
-  const [customEmail, setCustomEmail] = useState('');
-  
+  const { signUpWithEmail, loginWithEmail, loginWithGoogle } = useContext(AppStateContext);
+
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const isNativeApp = typeof window !== 'undefined' && !!window.Capacitor;
-  const [showDemoOptions, setShowDemoOptions] = useState(!isSupabaseConfigured || isNativeApp);
-
-  // Only show active or banned mock users for testing
-  const mockLoginAccounts = users.filter(u => u.uid.startsWith('google-user-'));
-
-  const handleMockLogin = (uid) => {
-    const success = loginWithMockAccount(uid);
-    if (success) {
-      const user = users.find(u => u.uid === uid);
-      if (user.schoolName && user.region) {
-        onNavigate('feed');
-      } else {
-        onNavigate('profile-setup');
-      }
-    }
-  };
 
   const handleRealGoogleLogin = async () => {
     if (isNativeApp) {
-      if (window.confirm('⚠️ 모바일 앱 환경 안내:\n모바일 앱(Capacitor) 환경에서는 실제 구글 소셜 로그인 완료 후 앱으로 자동 복귀하려면 기기 딥링크(Custom URL Scheme) 및 Supabase 리다이렉트 설정이 추가로 완료되어야 합니다.\n\n원활한 에뮬레이터/기기 테스트를 위해 하단의 [데모 시뮬레이션 로그인]을 사용하시는 것을 강력하게 권장합니다.\n\n그래도 구글 로그인을 계속 진행하시겠습니까?')) {
-        if (isSupabaseConfigured) {
-          await loginWithGoogle();
-        } else {
-          alert('⚠️ Supabase 미설정:\n현재 로컬 데모 모드입니다. 구글 실시간 로그인을 이용하려면 .env에 Supabase 환경변수를 입력해 주세요.');
-        }
+      if (window.confirm('⚠️ 모바일 앱 환경 안내:\n모바일 앱 환경에서는 실제 구글 로그인 연동 시 단말기 딥링크 및 Supabase 리다이렉트 설정이 추가로 연계되어 있어야 최종 앱으로 복귀할 수 있습니다.\n\n로컬 테스트 시 딥링크가 미세팅 상태라면 이메일 기반 자체 가입/로그인을 통해 편리하게 접속하시기를 권장합니다.\n\n구글 로그인을 계속 진행하시겠습니까?')) {
+        await loginWithGoogle();
       }
-    } else if (isSupabaseConfigured) {
-      await loginWithGoogle();
     } else {
-      alert('⚠️ Supabase 미설정:\n현재 로컬 데모 모드입니다. 구글 실시간 로그인을 이용하려면 .env에 Supabase 환경변수를 입력해 주세요.\n\n하단의 [데모 시뮬레이션 로그인 열기]를 클릭해 테스트 계정으로 접속할 수 있습니다.');
+      await loginWithGoogle();
     }
   };
 
-  const handleCustomLogin = (e) => {
+  const handleAuthSubmit = async (e) => {
     e.preventDefault();
-    if (!customName.trim() || !customEmail.trim()) {
-      alert('이름과 이메일을 모두 입력해 주세요.');
+    if (!email.trim() || !password.trim()) {
+      alert('이메일과 비밀번호를 모두 입력해 주세요.');
       return;
     }
-    if (!customEmail.includes('@')) {
-      alert('올바른 이메일 형식이 아닙니다.');
+    if (password.length < 6) {
+      alert('비밀번호는 최소 6자 이상이어야 합니다.');
       return;
     }
 
-    const success = loginCustomEmail(customName, customEmail);
-    if (success) {
-      // Find if they are existing
-      const existing = users.find(u => u.email === customEmail);
-      if (existing && existing.schoolName && existing.region) {
+    setLoading(true);
+
+    if (isSignUp) {
+      if (!name.trim()) {
+        alert('회원가입을 위해 이름을 입력해 주세요.');
+        setLoading(false);
+        return;
+      }
+      const success = await signUpWithEmail(name.trim(), email.trim(), password);
+      setLoading(false);
+      if (success) {
+        // MOCK 모드는 자동 로그인이 되므로 바로 profile-setup으로 리다이렉트
+        if (!isSupabaseConfigured) {
+          onNavigate('profile-setup');
+        } else {
+          // Supabase 모드는 회원가입 승인 대기 또는 직접 로그인 유도
+          setIsSignUp(false);
+          setPassword('');
+        }
+      }
+    } else {
+      const success = await loginWithEmail(email.trim(), password);
+      setLoading(false);
+      if (success) {
         onNavigate('feed');
-      } else {
-        onNavigate('profile-setup');
       }
     }
   };
 
   return (
-    <div className="mobile-auth-screen animate-fade-in">
-      <div className="auth-header" style={{ marginBottom: '40px' }}>
-        <div className="auth-icon" style={{ fontSize: '3.5rem', marginBottom: '16px' }}>🎒</div>
-        <h2 style={{ fontSize: '1.6rem', letterSpacing: '-0.5px' }}>반넷 (Barnet)</h2>
-        <p style={{ color: 'var(--neutral-muted)', fontSize: '0.85rem' }}>인증된 학부모들만의 익명 소통 광장</p>
+    <div className="mobile-app-layout animate-fade-in" style={{ backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px' }}>
+      
+      {/* Mini Brand Logo */}
+      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '8px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.05))' }}>🎒</div>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.8px', color: 'var(--neutral-dark)', margin: 0 }}>
+          반넷 (Barnet)
+        </h2>
+        <p style={{ color: 'var(--neutral-muted)', fontSize: '0.78rem', marginTop: '4px', fontWeight: '500' }}>
+          인증된 학부모들만의 고품격 가명 소통 광장
+        </p>
       </div>
 
-      <div className="auth-real-section animate-slide-up">
-        {/* Google Official-style login button */}
+      {/* Auth Card Container */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        
+        {/* Google SSO Button */}
         <button 
           type="button" 
           className="google-sso-btn"
           onClick={handleRealGoogleLogin}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+            backgroundColor: '#ffffff',
+            border: '1px solid #cbd5e1',
+            borderRadius: '12px',
+            padding: '12px',
+            fontSize: '0.82rem',
+            fontWeight: '600',
+            color: 'var(--neutral-dark)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+          }}
         >
-          <svg className="google-icon" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
@@ -88,99 +111,126 @@ export const AppAuth = ({ onNavigate }) => {
           </svg>
           Google 계정으로 로그인
         </button>
-        
-        <p className="auth-terms-notice">
-          로그인 시 반넷의 <strong>이용약관</strong> 및 <strong>개인정보처리방침</strong>에 동의하는 것으로 간주됩니다.
-        </p>
-      </div>
 
-      {/* Hidden/Collapsible Simulation Area for developers/demo usage */}
-      <div className="demo-toggle-area" style={{ marginTop: 'auto', paddingTop: '24px', textAlign: 'center' }}>
-        <button 
-          type="button" 
-          onClick={() => setShowDemoOptions(!showDemoOptions)}
-          style={{ 
-            background: 'none', 
-            border: 'none', 
-            fontSize: '0.65rem', 
-            color: 'var(--neutral-muted)', 
-            cursor: 'pointer', 
-            textDecoration: 'underline' 
-          }}
-        >
-          {showDemoOptions ? '데모 시뮬레이션 설정 숨기기' : '🛠️ 데모 시뮬레이션 로그인 열기'}
-        </button>
-      </div>
+        {/* Separator */}
+        <div style={{ display: 'flex', alignItems: 'center', margin: '8px 0' }}>
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
+          <span style={{ padding: '0 12px', fontSize: '0.68rem', color: 'var(--neutral-muted)', fontWeight: '600' }}>
+            또는 이메일로 {isSignUp ? '가입' : '로그인'}
+          </span>
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
+        </div>
 
-      {showDemoOptions && (
-        <div className="demo-section-card animate-slide-up" style={{
-          marginTop: '12px',
-          padding: '16px',
-          backgroundColor: '#fafafa',
-          borderRadius: '12px',
-          border: '1px solid #e2e8f0',
-          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ fontSize: '0.68rem', fontWeight: '700', color: '#64748b' }}>🛠️ LOCAL DEMO SIMULATOR</span>
-            {isSupabaseConfigured ? (
-              <span className="badge badge-teal" style={{ fontSize: '0.58rem' }}>LIVE 연동</span>
-            ) : (
-              <span className="badge badge-gold" style={{ fontSize: '0.58rem' }}>MOCK 모드</span>
-            )}
-          </div>
-          
-          <div className="input-group" style={{ marginBottom: '8px' }}>
-            <span className="input-label" style={{ fontSize: '0.62rem' }}>원클릭 모의 계정 로그인</span>
-          </div>
+        {/* Credentials Form */}
+        <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <input
+            type="email"
+            className="text-input"
+            placeholder="이메일 주소"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+            style={{
+              padding: '12px 14px',
+              fontSize: '0.82rem',
+              borderRadius: '12px',
+              border: '1px solid #cbd5e1',
+              backgroundColor: '#f8fafc',
+              transition: 'border-color 0.2s ease'
+            }}
+          />
 
-          <div className="auth-google-btn-list" style={{ gap: '8px', marginBottom: '12px' }}>
-            {mockLoginAccounts.map(account => (
-              <button 
-                key={account.uid}
-                className="auth-google-btn"
-                style={{ padding: '8px 12px' }}
-                onClick={() => handleMockLogin(account.uid)}
-              >
-                <div className="avatar" style={{ width: '26px', height: '26px', fontSize: '0.75rem', marginRight: '8px' }}>
-                  {account.name.charAt(0)}
-                </div>
-                <div className="user-info">
-                  <div className="user-name" style={{ fontSize: '0.78rem' }}>
-                    {account.name} {account.isBanned && <span className="badge badge-red" style={{fontSize: '0.55rem'}}>정지</span>}
-                  </div>
-                </div>
-                <span style={{ fontSize: '0.7rem' }}>🔑</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="auth-divider" style={{ margin: '8px 0', fontSize: '0.65rem' }}>또는 모의 이메일 가입</div>
-
-          <form className="auth-custom-form" style={{ gap: '8px' }} onSubmit={handleCustomLogin}>
+          {isSignUp && (
             <input
               type="text"
               className="text-input"
-              style={{ padding: '8px 10px', fontSize: '0.78rem' }}
-              placeholder="이름 (실명)"
-              value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
+              placeholder="학부모 실명 (예: 김은아)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={loading}
+              style={{
+                padding: '12px 14px',
+                fontSize: '0.82rem',
+                borderRadius: '12px',
+                border: '1px solid #cbd5e1',
+                backgroundColor: '#f8fafc',
+                transition: 'border-color 0.2s ease'
+              }}
             />
-            <input
-              type="email"
-              className="text-input"
-              style={{ padding: '8px 10px', fontSize: '0.78rem' }}
-              placeholder="이메일 주소"
-              value={customEmail}
-              onChange={(e) => setCustomEmail(e.target.value)}
-            />
-            <button type="submit" className="submit-btn" style={{ padding: '8px', fontSize: '0.78rem' }}>
-              시뮬레이션 가입/로그인
-            </button>
-          </form>
+          )}
+
+          <input
+            type="password"
+            className="text-input"
+            placeholder="비밀번호 (6자 이상)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            style={{
+              padding: '12px 14px',
+              fontSize: '0.82rem',
+              borderRadius: '12px',
+              border: '1px solid #cbd5e1',
+              backgroundColor: '#f8fafc',
+              transition: 'border-color 0.2s ease'
+            }}
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="action-btn action-btn-primary"
+            style={{
+              padding: '12px',
+              fontSize: '0.82rem',
+              fontWeight: '700',
+              borderRadius: '12px',
+              backgroundColor: 'var(--primary)',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)',
+              marginTop: '6px'
+            }}
+          >
+            {loading ? '처리 중...' : isSignUp ? '반넷 가입하기' : '로그인'}
+          </button>
+        </form>
+
+        {/* Toggle Mode Link */}
+        <div style={{ textAlign: 'center', marginTop: '12px' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setName('');
+              setPassword('');
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '0.75rem',
+              color: 'var(--primary)',
+              fontWeight: '700',
+              cursor: 'pointer',
+              textDecoration: 'none'
+            }}
+          >
+            {isSignUp ? '이미 계정이 있으신가요? 로그인' : '아직 계정이 없으신가요? 회원가입'}
+          </button>
         </div>
-      )}
+
+      </div>
+
+      {/* Footer copyright */}
+      <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center' }}>
+        <p style={{ color: 'var(--neutral-muted)', fontSize: '0.62rem', margin: 0 }}>
+          © 2026 Barnet. All rights reserved.
+        </p>
+      </div>
+
     </div>
   );
 };
+
 export default AppAuth;

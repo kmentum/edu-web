@@ -456,6 +456,113 @@ export const AppStateProvider = ({ children }) => {
     return true;
   };
 
+  const signUpWithEmail = async (name, email, password) => {
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: name
+            }
+          }
+        });
+
+        if (error) {
+          alert(`회원가입 실패: ${error.message}`);
+          return false;
+        }
+
+        if (data.user) {
+          const { error: profileErr } = await supabase.from('profiles').insert({
+            id: data.user.id,
+            email: data.user.email,
+            points: 1000,
+            verified_academy: [],
+            purchased_pdfs: []
+          });
+          if (profileErr && profileErr.code !== '23505') {
+            console.error('Supabase 프로필 가산 실패:', profileErr);
+          }
+        }
+        
+        alert('회원가입 완료! 로그인을 진행해 주세요. (이메일 인증 메일이 발송되었을 수 있습니다)');
+        return true;
+      } catch (err) {
+        console.error('Supabase 자체 회원가입 실패:', err);
+        alert(`오류가 발생했습니다: ${err.message}`);
+        return false;
+      }
+    } else {
+      const existing = users.find(u => u.email === email);
+      if (existing) {
+        alert('이미 가입된 이메일 주소입니다.');
+        return false;
+      }
+
+      const newUid = `user-${Date.now()}`;
+      const newUser = {
+        uid: newUid,
+        email,
+        password,
+        name,
+        schoolName: '',
+        schoolLevel: '',
+        grade: '',
+        region: '',
+        pseudonym: '',
+        points: 1000,
+        isBanned: false,
+        verifiedAcademy: [],
+        purchasedPdfs: [],
+        createdAt: new Date().toISOString()
+      };
+
+      setUsers(prev => [newUser, ...prev]);
+      setCurrentUser(newUser);
+      alert('회원가입이 완료되었습니다! (데모 모드 자동 로그인)');
+      return true;
+    }
+  };
+
+  const loginWithEmail = async (email, password) => {
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (error) {
+          alert(`로그인 실패: ${error.message}`);
+          return false;
+        }
+        return true;
+      } catch (err) {
+        console.error('Supabase 로그인 에러:', err);
+        alert(`로그인 오류: ${err.message}`);
+        return false;
+      }
+    } else {
+      const target = users.find(u => u.email === email);
+      if (!target) {
+        alert('등록되지 않은 이메일 주소입니다.');
+        return false;
+      }
+      if (target.password && target.password !== password) {
+        alert('비밀번호가 일치하지 않습니다.');
+        return false;
+      }
+      if (target.isBanned) {
+        alert('이 계정은 이용정지(Ban) 상태입니다.');
+        return false;
+      }
+      setCurrentUser(target);
+      return true;
+    }
+  };
+
   // Google OAuth actual Sign In
   const loginWithGoogle = async () => {
     if (!isSupabaseConfigured) {
@@ -1197,6 +1304,8 @@ export const AppStateProvider = ({ children }) => {
       resetToFactoryDefaults,
       loginWithMockAccount,
       loginCustomEmail,
+      signUpWithEmail,
+      loginWithEmail,
       loginWithGoogle,
       logout,
       completeProfileSetup,
