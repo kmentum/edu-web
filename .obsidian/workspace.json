@@ -11,13 +11,11 @@
             "id": "7a3236317b4accc5",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "pdf",
               "state": {
-                "file": "business_plan_and_specification.md",
-                "mode": "source",
-                "source": false
+                "file": "business_plan_and_specification.pdf"
               },
-              "icon": "lucide-file",
+              "icon": "lucide-file-text",
               "title": "business_plan_and_specification"
             }
           }
@@ -94,7 +92,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "business_plan_and_specification.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +101,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "business_plan_and_specification 의 백링크"
+              "title": "백링크"
             }
           },
           {
@@ -113,12 +110,11 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "business_plan_and_specification.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "business_plan_and_specification 의 나가는 링크"
+              "title": "나가는 링크"
             }
           },
           {
@@ -156,7 +152,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "business_plan_and_specification.md",
+                "file": "business_plan_and_specification.pdf",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -185,43 +181,51 @@
   },
   "active": "7a3236317b4accc5",
   "lastOpenFiles": [
-    "doc",
-    "새 폴더",
-    "dist/assets/index-BNFXNpE7.js",
-    "android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/index-DFMfkTme.js.jar",
-    "android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/index-Cuxp_SpR.css.jar",
-    "android/app/build/intermediates/assets/debug/mergeDebugAssets/public/assets/index-Cuxp_SpR.css",
-    "android/app/build/intermediates/assets/debug/mergeDebugAssets/public/assets/index-DFMfkTme.js",
-    "android/app/src/main/assets/public/assets/index-DFMfkTme.js",
-    "dist/assets/index-DFMfkTme.js",
-    "android/app/src/main/assets/public/assets/index-Cuxp_SpR.css",
-    "android/app/src/main/assets/public/assets/index-Bf_3rLoy.js",
-    "node_modules/globby/readme.md",
-    "node_modules/fast-glob/node_modules/glob-parent/README.md",
-    "node_modules/fast-glob/node_modules/glob-parent/CHANGELOG.md",
-    "node_modules/fast-glob/README.md",
-    "node_modules/micromatch/node_modules/picomatch/README.md",
-    "node_modules/micromatch/README.md",
-    "node_modules/trim-repeated/node_modules/escape-string-regexp/readme.md",
-    "node_modules/trim-repeated/readme.md",
-    "node_modules/strip-outer/node_modules/escape-string-regexp/readme.md",
-    "node_modules/strip-outer/readme.md",
-    "node_modules/gh-pages/node_modules/commander/Readme.md",
-    "node_modules/gh-pages/readme.md",
-    "node_modules/pkg-dir/node_modules/locate-path/readme.md",
-    "node_modules/pkg-dir/node_modules/p-locate/readme.md",
-    "node_modules/pkg-dir/node_modules/find-up/readme.md",
-    "node_modules/pkg-dir/node_modules/p-limit/readme.md",
-    "node_modules/pkg-dir/readme.md",
-    "node_modules/@nodelib/fs.walk/README.md",
-    "node_modules/@nodelib/fs.stat/README.md",
-    "node_modules/@nodelib/fs.scandir/README.md",
-    "node_modules/async/README.md",
-    "node_modules/async/CHANGELOG.md",
-    "node_modules/p-try/readme.md",
-    "node_modules/is-number/README.md",
-    "node_modules/queue-microtask/README.md",
-    "node_modules/@supabase/phoenix/priv/static/phoenix.png",
-    "node_modules/@supabase/phoenix/priv/static/phoenix-orange.png"
+    "web/dist/assets/index-DFqNtqeL.js",
+    "android/app/src/main/assets/public/assets/index-BtrLkhdx.js",
+    "web/dist/assets/index-BtrLkhdx.js",
+    "web/dist/assets/index-ChcsAy4O.js",
+    "ios/App/App/public/assets/index-bTUo5D5x.js",
+    "android/app/src/main/assets/public/assets/index-bTUo5D5x.js",
+    "web/dist/assets/index-bTUo5D5x.js",
+    "web/dist/assets/index-d_3TnZsQ.js",
+    "web/dist/assets/index-856OFpeS.css",
+    "web/dist/assets",
+    "ios/App/App/public/assets/index-BMe_b_Sa.js",
+    "business_plan_and_specification.md",
+    "docs/학부모_익명_커뮤니티_앱_기능명세서_v1.md",
+    "docs/학부모_익명_커뮤니티_앱_기능명세서_v2.md",
+    "docs/business_plan_and_specification.md",
+    "web/dist/favicon.svg",
+    "web/dist/icons.svg",
+    "web/node_modules/native-run/assets/android/skins/pixel_3/round_corners.webp",
+    "web/node_modules/native-run/assets/android/skins/pixel_3/port_back.webp",
+    "web/node_modules/native-run/assets/android/skins/pixel_2/port_shadow.webp",
+    "web/node_modules/native-run/assets/android/skins/pixel_2/port_fore.webp",
+    "web/node_modules/native-run/assets/android/skins/pixel_2/port_back.webp",
+    "web/node_modules/native-run/assets/android/skins/pixel_2/land_shadow.webp",
+    "web/node_modules/native-run/assets/android/skins/pixel_2/land_fore.webp",
+    "web/node_modules/native-run/assets/android/skins/pixel_2/land_back.webp",
+    "web/node_modules/native-run/assets/android/skins/README.md",
+    "web/node_modules/@capacitor/cli/node_modules/semver/README.md",
+    "web/node_modules/@ionic/utils-fs/node_modules/fs-extra/README.md",
+    "web/node_modules/@ionic/utils-fs/node_modules/fs-extra/CHANGELOG.md",
+    "web/node_modules/@eslint-community/eslint-utils/node_modules/eslint-visitor-keys/README.md",
+    "web/node_modules/xml2js/node_modules/xmlbuilder/README.md",
+    "web/node_modules/xml2js/node_modules/xmlbuilder/CHANGELOG.md",
+    "web/node_modules/trim-repeated/node_modules/escape-string-regexp/readme.md",
+    "web/node_modules/tar/node_modules/yallist/README.md",
+    "web/node_modules/tar/node_modules/yallist/LICENSE.md",
+    "web/node_modules/strip-outer/node_modules/escape-string-regexp/readme.md",
+    "web/node_modules/prompts/node_modules/kleur/readme.md",
+    "web/node_modules/pkg-dir/node_modules/p-locate/readme.md",
+    "web/node_modules/pkg-dir/node_modules/p-limit/readme.md",
+    "web/node_modules/pkg-dir/node_modules/find-up/readme.md",
+    "web/node_modules/pkg-dir/node_modules/locate-path/readme.md",
+    "web/node_modules/path-scurry/node_modules/lru-cache/README.md",
+    "web/node_modules/path-scurry/node_modules/lru-cache/LICENSE.md",
+    "web/node_modules/micromatch/node_modules/picomatch/README.md",
+    "web/node_modules/gh-pages/node_modules/commander/Readme.md",
+    "web/node_modules/fast-glob/node_modules/glob-parent/README.md"
   ]
 }

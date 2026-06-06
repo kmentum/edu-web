@@ -1073,9 +1073,20 @@ export const AppStateProvider = ({ children }) => {
   const deleteUser = async (uid) => {
     if (isSupabaseConfigured) {
       try {
-        await supabase.from('profiles').delete().eq('id', uid);
+        // 1단계: 영구 삭제용 RPC 함수 호출 시도 (auth.users와 profiles 둘 다 영구 삭제)
+        const { error: rpcError } = await supabase.rpc('delete_user_permanently', { target_id: uid });
+        
+        if (rpcError) {
+          console.warn('RPC delete_user_permanently 실패 (트리거 함수 미등록 가능성), 단일 profile delete로 폴백합니다.', rpcError);
+          // 2단계 폴백: profiles 테이블에서만 삭제 처리
+          const { error: fallbackError } = await supabase.from('profiles').delete().eq('id', uid);
+          if (fallbackError) {
+            throw fallbackError;
+          }
+        }
       } catch (err) {
         console.error('Supabase 유저 삭제 실패:', err);
+        alert(`유저 삭제 중 오류가 발생했습니다: ${err.message || err}`);
       }
     }
     setUsers(prev => prev.filter(u => u.uid !== uid));

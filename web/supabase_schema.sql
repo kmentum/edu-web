@@ -97,3 +97,18 @@ CREATE OR REPLACE TRIGGER on_auth_user_created_confirm_email
   BEFORE INSERT ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.auto_confirm_email();
+
+-- 7. 회원 영구 삭제 RPC 함수 (auth.users 및 public.profiles 통합 삭제)
+-- 관리자 페이지에서 회원을 완전히 영구 삭제할 수 있도록 auth.users 테이블과 public.profiles 테이블에서 해당 유저를 동시 삭제합니다.
+-- security definer 옵션을 통해 auth.users에 대한 접근 권한을 우회합니다.
+CREATE OR REPLACE FUNCTION public.delete_user_permanently(target_id text)
+RETURNS void AS $$
+BEGIN
+  -- profiles에서 먼저 삭제
+  DELETE FROM public.profiles WHERE id = target_id;
+  
+  -- auth.users에서 삭제 (UUID로 캐스팅)
+  DELETE FROM auth.users WHERE id = target_id::uuid;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+

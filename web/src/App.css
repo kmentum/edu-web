@@ -10,6 +10,21 @@
   color: var(--neutral-dark);
 }
 
+.feed-header-group {
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 110px;
+  opacity: 1;
+  overflow: hidden;
+  transform: translateY(0);
+  z-index: 10;
+}
+.feed-header-group.hide {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-20px);
+  pointer-events: none;
+}
+
 .mobile-header {
   height: 52px;
   background-color: var(--white);
