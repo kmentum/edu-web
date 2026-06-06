@@ -114,7 +114,7 @@ export const EmulatorContainer = () => {
         <div className="phone-screen">
           
           {/* V2: Floating Notification Bell Overlay */}
-          {currentUser && currentScreen !== 'auth' && currentScreen !== 'profile-setup' && (
+          {currentUser && currentScreen !== 'auth' && currentScreen !== 'profile-setup' && currentScreen !== 'add-post' && (
             <div className="notif-bell-container">
               <button 
                 onClick={() => {
