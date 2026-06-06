@@ -7,6 +7,7 @@ import AppPostDetail from './AppPostDetail';
 import AppReceiptAuth from './AppReceiptAuth';
 import AppCalendar from './AppCalendar';
 import AppMyPage from './AppMyPage';
+import AppPdfMarket from './AppPdfMarket';
 
 export const EmulatorContainer = () => {
   const { 
@@ -20,7 +21,7 @@ export const EmulatorContainer = () => {
     theme
   } = useContext(AppStateContext);
   
-  // Custom router screen states: 'auth', 'profile-setup', 'feed', 'post-detail', 'add-post', 'receipt', 'calendar', 'mypage'
+  // Custom router screen states: 'auth', 'profile-setup', 'feed', 'post-detail', 'add-post', 'receipt', 'calendar', 'mypage', 'pdf-market'
   const [currentScreen, setCurrentScreen] = useState('auth');
   const [selectedPostId, setSelectedPostId] = useState(null);
 
@@ -77,6 +78,8 @@ export const EmulatorContainer = () => {
         return <AppCalendar onNavigate={handleNavigate} />;
       case 'mypage':
         return <AppMyPage onNavigate={handleNavigate} onSelectPost={handleSelectPost} />;
+      case 'pdf-market':
+        return <AppPdfMarket onNavigate={handleNavigate} />;
       default:
         return <AppAuth onNavigate={handleNavigate} />;
     }
@@ -88,6 +91,7 @@ export const EmulatorContainer = () => {
     if (currentScreen === 'receipt') return 'receipt';
     if (currentScreen === 'calendar') return 'calendar';
     if (currentScreen === 'add-post') return 'add-post';
+    if (currentScreen === 'pdf-market') return 'pdf-market';
     return '';
   };
 
@@ -224,6 +228,18 @@ export const EmulatorContainer = () => {
                 </svg>
               </span>
               <span>영수증</span>
+            </button>
+            <button 
+              className={`nav-item-btn ${activeNavTab === 'pdf-market' ? 'active' : ''}`}
+              onClick={() => handleNavigate('pdf-market')}
+            >
+              <span className="nav-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                </svg>
+              </span>
+              <span>마켓</span>
             </button>
             <button 
               className={`nav-item-btn nav-write-btn ${activeNavTab === 'add-post' ? 'active' : ''}`}
