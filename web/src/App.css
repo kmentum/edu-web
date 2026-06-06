@@ -203,6 +203,11 @@
   background-color: var(--white);
 }
 
+.text-input::placeholder {
+  color: var(--neutral-muted);
+  opacity: 0.45; /* 더 부드럽고 연하게 조절 */
+}
+
 .text-input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.15);
