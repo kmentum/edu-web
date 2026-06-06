@@ -181,7 +181,7 @@ export const EmulatorContainer = () => {
         </div>
 
         {/* Bottom Nav Bar (visible only when logged in) */}
-        {currentUser && currentScreen !== 'auth' && currentScreen !== 'profile-setup' && (
+        {currentUser && currentScreen !== 'auth' && currentScreen !== 'profile-setup' && currentScreen !== 'post-detail' && (
           <div className="mobile-nav-bar">
             <button 
               className={`nav-item-btn ${activeNavTab === 'feed' ? 'active' : ''}`}

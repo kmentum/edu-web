@@ -11,12 +11,14 @@
             "id": "7a3236317b4accc5",
             "type": "leaf",
             "state": {
-              "type": "pdf",
+              "type": "markdown",
               "state": {
-                "file": "business_plan_and_specification.pdf"
+                "file": "docs/학부모_익명_커뮤니티_앱_기능명세서_v2.md",
+                "mode": "preview",
+                "source": false
               },
-              "icon": "lucide-file-text",
-              "title": "business_plan_and_specification"
+              "icon": "lucide-file",
+              "title": "학부모_익명_커뮤니티_앱_기능명세서_v2"
             }
           }
         ]
@@ -76,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 445.5
   },
   "right": {
     "id": "d480b933ade82423",
@@ -92,6 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "docs/학부모_익명_커뮤니티_앱_기능명세서_v2.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -101,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "백링크"
+              "title": "학부모_익명_커뮤니티_앱_기능명세서_v2 의 백링크"
             }
           },
           {
@@ -110,11 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "docs/학부모_익명_커뮤니티_앱_기능명세서_v2.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "나가는 링크"
+              "title": "학부모_익명_커뮤니티_앱_기능명세서_v2 의 나가는 링크"
             }
           },
           {
@@ -152,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "business_plan_and_specification.pdf",
+                "file": "docs/학부모_익명_커뮤니티_앱_기능명세서_v2.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "business_plan_and_specification 의 개요"
+              "title": "학부모_익명_커뮤니티_앱_기능명세서_v2 의 개요"
             }
           }
         ]
@@ -181,21 +185,22 @@
   },
   "active": "7a3236317b4accc5",
   "lastOpenFiles": [
-    "web/dist/assets/index-DtTFEXZR.css",
-    "web/dist/assets/index-CjYNcTpJ.js",
-    "android/app/build/outputs/apk/debug/app-debug.zip",
-    "android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/index-DFySZJaw.js.jar",
-    "android/app/build/intermediates/assets/debug/mergeDebugAssets/public/assets/index-DFySZJaw.js",
-    "ios/App/App/public/assets/index-DFySZJaw.js",
-    "android/app/src/main/assets/public/assets/index-DFySZJaw.js",
-    "web/dist/assets/index-DFySZJaw.js",
-    "web/dist/assets/index-C2So62l4.js",
-    "android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/index-9FtiBwjY.js.jar",
-    "android/app/build/intermediates/assets/debug/mergeDebugAssets/public/assets/index-9FtiBwjY.js",
-    "business_plan_and_specification.md",
-    "docs/학부모_익명_커뮤니티_앱_기능명세서_v1.md",
-    "docs/학부모_익명_커뮤니티_앱_기능명세서_v2.md",
+    "ios/App/App/public/assets/index-D87-_VMJ.js",
+    "ios/App/App/public/assets/index-CbJzy8Na.css",
+    "android/app/src/main/assets/public/assets/index-D87-_VMJ.js",
+    "web/dist/assets/index-D87-_VMJ.js",
+    "web/dist/assets/index-Cv8hvd5V.js",
+    "android/app/src/main/assets/public/assets/index-Dy3rcb2H.js",
+    "web/dist/assets/index-Dy3rcb2H.js",
+    "android/app/src/main/assets/public/assets/index-MaagvMay.js",
+    "web/dist/assets/index-MaagvMay.js",
+    "android/app/src/main/assets/public/assets/index-CJPvjVLk.js",
+    "android/app/src/main/assets/public/assets/index-CbJzy8Na.css",
     "docs/business_plan_and_specification.md",
+    "docs/학부모_익명_커뮤니티_앱_기능명세서_v2.md",
+    "docs/학부모_익명_커뮤니티_앱_기능명세서_v1.md",
+    "아이디어.md",
+    "business_plan_and_specification.md",
     "web/dist/favicon.svg",
     "web/dist/icons.svg",
     "web/node_modules/native-run/assets/android/skins/pixel_3/round_corners.webp",
@@ -225,7 +230,6 @@
     "web/node_modules/path-scurry/node_modules/lru-cache/README.md",
     "web/node_modules/path-scurry/node_modules/lru-cache/LICENSE.md",
     "web/node_modules/micromatch/node_modules/picomatch/README.md",
-    "web/node_modules/gh-pages/node_modules/commander/Readme.md",
-    "web/node_modules/fast-glob/node_modules/glob-parent/README.md"
+    "web/node_modules/gh-pages/node_modules/commander/Readme.md"
   ]
 }

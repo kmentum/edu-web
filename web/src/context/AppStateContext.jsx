@@ -77,7 +77,11 @@ export const AppStateProvider = ({ children }) => {
 
   const [posts, setPosts] = useState(() => {
     const saved = localStorage.getItem('edu_posts');
-    return saved ? JSON.parse(saved) : mockPosts;
+    const rawPosts = saved ? JSON.parse(saved) : mockPosts;
+    return rawPosts.map(p => ({
+      ...p,
+      subscribedUids: p.subscribedUids || [p.authorUid]
+    }));
   });
 
   const [comments, setComments] = useState(() => {
@@ -370,7 +374,8 @@ export const AppStateProvider = ({ children }) => {
             hasReceiptBadge: p.has_receipt_badge,
             qnaPoints: p.qna_points,
             qnaResolved: p.qna_resolved,
-            pollOptions: p.poll_options
+            pollOptions: p.poll_options,
+            subscribedUids: p.subscribed_uids || [p.author_uid]
           })));
         }
 
@@ -865,6 +870,7 @@ export const AppStateProvider = ({ children }) => {
       qnaPoints: category === '질문' ? (parseInt(options.qnaPoints) || 0) : 0,
       qnaResolved: false,
       pollOptions: options.pollOptions ? options.pollOptions.map(opt => ({ text: opt, votes: 0, votedUids: [] })) : null,
+      subscribedUids: [currentUser.uid]
     };
 
     if (newPost.qnaPoints > 0) {
@@ -1090,6 +1096,33 @@ export const AppStateProvider = ({ children }) => {
 
     setComments(prev => [...prev, newComment]);
     setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p));
+
+    // 댓글 알림 발송 시뮬레이션 연동
+    const targetPost = posts.find(p => p.id === postId);
+    if (targetPost) {
+      const subs = targetPost.subscribedUids || [targetPost.authorUid];
+      
+      // 댓글 작성자 본인을 제외한 구독자 리스트
+      const targetSubscribers = subs.filter(uid => uid !== newComment.authorUid);
+
+      // 모바일 에뮬레이터 환경에서 댓글을 다는 경우, 
+      // 만약 알림 대상 유저 목록에 현재 로그인 해있는 유저(currentUser.uid)가 들어있다면, 푸시 알림 수신 시뮬레이션 발동
+      if (targetSubscribers.includes(currentUser.uid) && notificationsEnabled.comments) {
+        const notifText = `💬 내 구독 글 [${targetPost.title.substring(0, 10)}...]에 새 댓글: "${content.substring(0, 15)}..."`;
+        const newNotif = {
+          id: `notif-${Date.now()}`,
+          text: notifText,
+          time: new Date().toISOString(),
+          unread: true,
+          type: 'comment'
+        };
+
+        setNotifications(prev => [newNotif, ...prev]);
+        setActiveNotification(newNotif);
+        setTimeout(() => setActiveNotification(null), 4000);
+      }
+    }
+
     return newComment;
   };
 
@@ -1117,6 +1150,84 @@ export const AppStateProvider = ({ children }) => {
     if (post.qnaPoints > 0) {
       updateUserPointsLocally(comment.authorUid, post.qnaPoints);
       alert(`답변이 채택되었습니다! 작성자에게 ${post.qnaPoints}P가 지급되었습니다.`);
+    }
+  };
+
+  const updatePost = async (postId, title, content) => {
+    if (!currentUser) return null;
+
+    const filterResult = runAIFilter(title, content);
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('posts').update({
+          title,
+          content,
+          is_ai_flagged: filterResult.isFlagged,
+          ai_flag_reason: filterResult.isFlagged ? `AI 필터링 감지: "${filterResult.keywords}" 포함` : '',
+        }).eq('id', postId);
+      } catch (err) {
+        console.error('Supabase 포스트 업데이트 실패:', err);
+      }
+    }
+
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        return {
+          ...p,
+          title,
+          content,
+          isAiFlaged: filterResult.isFlagged,
+          aiFlagReason: filterResult.isFlagged ? `AI 필터링 감지: "${filterResult.keywords}" 포함` : '',
+          isBanned: filterResult.isFlagged ? true : p.isBanned
+        };
+      }
+      return p;
+    }));
+
+    return { isFlagged: filterResult.isFlagged, keywords: filterResult.keywords };
+  };
+
+  const updateComment = async (commentId, content) => {
+    if (!currentUser) return false;
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('comments').update({ content }).eq('id', commentId);
+      } catch (err) {
+        console.error('Supabase 댓글 업데이트 실패:', err);
+      }
+    }
+
+    setComments(prev => prev.map(c => c.id === commentId ? { ...c, content } : c));
+    return true;
+  };
+
+  const togglePostCommentsSubscription = async (postId) => {
+    if (!currentUser) return;
+
+    let nextSubs = [];
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        const subs = p.subscribedUids || [p.authorUid];
+        const isSubbed = subs.includes(currentUser.uid);
+        nextSubs = isSubbed 
+          ? subs.filter(uid => uid !== currentUser.uid) 
+          : [...subs, currentUser.uid];
+        return { ...p, subscribedUids: nextSubs };
+      }
+      return p;
+    }));
+
+    // Supabase에 별도 subscribed_uids 컬럼이 정의되지 않았더라도 로컬 상태로 안전 진행하도록 catch 처리
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('posts').update({
+          subscribed_uids: nextSubs
+        }).eq('id', postId);
+      } catch (err) {
+        // 컬럼 미정의 등 에러 무시
+      }
     }
   };
 
@@ -1543,6 +1654,9 @@ export const AppStateProvider = ({ children }) => {
       clearNotifications,
       markNotificationsAsRead,
       purchasePdf,
+      updatePost,
+      updateComment,
+      togglePostCommentsSubscription,
     }}>
       {children}
     </AppStateContext.Provider>
