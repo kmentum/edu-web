@@ -1365,3 +1365,27 @@ button:active, .post-card:active, .calendar-day:active, .calendar-event-card:act
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+.ptr-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  overflow: hidden;
+  gap: 4px;
+}
+
+.ptr-svg-track {
+  stroke: #e2e8f0;
+}
+
+.phone-screen.dark-theme .ptr-svg-track {
+  stroke: #334155;
+}
+
+.ptr-text {
+  font-size: 0.58rem;
+  color: var(--neutral-muted);
+  font-weight: 600;
+}
+

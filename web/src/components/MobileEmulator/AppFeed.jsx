@@ -404,16 +404,11 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
           const dashOffset = circ * (1 - (isRefreshing ? 1 : progress));
           return (
             <div
+              className="ptr-indicator"
               style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-                overflow: 'hidden',
                 height: isRefreshing ? `${THRESHOLD}px` : `${pullDisplayDist}px`,
                 transition: isPullingRef.current ? 'none' : 'height 0.28s ease',
-                paddingBottom: '6px',
-                gap: '4px',
+                paddingBottom: pullDisplayDist > 15 ? '6px' : '0px',
               }}
             >
               {/* 도넛 프로그레스 원 */}
@@ -422,6 +417,7 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
                 style={{
                   transform: isRefreshing ? undefined : `rotate(${-90 + progress * 360}deg)`,
                   animation: isRefreshing ? 'spinDonut 0.8s linear infinite' : undefined,
+                  opacity: Math.min(pullDisplayDist / 20, 1),
                 }}
                 viewBox="0 0 36 36"
               >
@@ -429,7 +425,7 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
                 <circle
                   cx="18" cy="18" r={r}
                   fill="none"
-                  stroke="#e2e8f0"
+                  className="ptr-svg-track"
                   strokeWidth="3"
                 />
                 {/* 진행 Arc */}
@@ -445,7 +441,7 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
                   style={{ transition: isPullingRef.current ? 'none' : 'stroke-dashoffset 0.1s' }}
                 />
               </svg>
-              <span style={{ fontSize: '0.58rem', color: 'var(--neutral-muted)', fontWeight: '600' }}>
+              <span className="ptr-text" style={{ opacity: Math.min(pullDisplayDist / 30, 1) }}>
                 {isRefreshing ? '새로고침 중...' : progress >= 1 ? '놓으면 새로고침' : '당겨서 새로고침'}
               </span>
             </div>
