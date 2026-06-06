@@ -4,8 +4,11 @@ import { mockPdfs } from '../../data/mockPdfData';
 import AppPdfViewerModal from './AppPdfViewerModal';
 
 export const AppMyPage = ({ onNavigate }) => {
-  const { currentUser, logout } = useContext(AppStateContext);
+  const { currentUser, logout, updateUserPseudonym } = useContext(AppStateContext);
   const [selectedPdf, setSelectedPdf] = useState(null);
+  
+  const [isEditingNick, setIsEditingNick] = useState(false);
+  const [newNick, setNewNick] = useState(currentUser ? currentUser.pseudonym : '');
 
   if (!currentUser) return null;
 
@@ -36,12 +39,64 @@ export const AppMyPage = ({ onNavigate }) => {
         {/* Profile Card */}
         <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, #1a237e 100%)', color: 'white', padding: '16px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
+            <div style={{ flex: 1, marginRight: '10px' }}>
               <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '50px' }}>
                 구글 SSO 익명 가명 프로필
               </span>
-              <h3 style={{ fontSize: '1rem', fontWeight: '700', marginTop: '6px' }}>{currentUser.pseudonym}</h3>
-              <p style={{ fontSize: '0.7rem', opacity: '0.8', marginTop: '2px' }}>
+              
+              {isEditingNick ? (
+                <div style={{ display: 'flex', gap: '6px', marginTop: '6px', alignItems: 'center', width: '100%' }}>
+                  <input
+                    type="text"
+                    className="text-input"
+                    value={newNick}
+                    onChange={(e) => setNewNick(e.target.value)}
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '0.8rem',
+                      width: '100%',
+                      borderRadius: '8px',
+                      color: 'var(--neutral-dark)',
+                      border: 'none',
+                      backgroundColor: 'white'
+                    }}
+                  />
+                  <button 
+                    onClick={async () => {
+                      const success = await updateUserPseudonym(newNick);
+                      if (success) setIsEditingNick(false);
+                    }}
+                    style={{ fontSize: '0.7rem', color: 'var(--secondary-light)', fontWeight: '700', padding: '4px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '6px' }}
+                  >
+                    저장
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setIsEditingNick(false);
+                      setNewNick(currentUser.pseudonym);
+                    }}
+                    style={{ fontSize: '0.7rem', color: '#fda4af', fontWeight: '700', padding: '4px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '6px' }}
+                  >
+                    취소
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: '700', margin: 0 }}>{currentUser.pseudonym}</h3>
+                  <button 
+                    onClick={() => {
+                      setNewNick(currentUser.pseudonym);
+                      setIsEditingNick(true);
+                    }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', padding: '2px' }}
+                    title="닉네임 수정"
+                  >
+                    ✏️
+                  </button>
+                </div>
+              )}
+              
+              <p style={{ fontSize: '0.7rem', opacity: '0.8', marginTop: '4px' }}>
                 실명: {currentUser.name} | {currentUser.email}
               </p>
             </div>

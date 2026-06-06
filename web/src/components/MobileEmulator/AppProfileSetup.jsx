@@ -13,6 +13,9 @@ export const AppProfileSetup = ({ onNavigate }) => {
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [showRegionDropdown, setShowRegionDropdown] = useState(false);
   
+  const [nicknameInput, setNicknameInput] = useState('');
+  const [isNickCustomized, setIsNickCustomized] = useState(false);
+  
   const [filteredSchools, setFilteredSchools] = useState([]);
   const [filteredRegions, setFilteredRegions] = useState([]);
 
@@ -64,22 +67,30 @@ export const AppProfileSetup = ({ onNavigate }) => {
       alert('우리 동네(지역)와 학교명을 입력해 주세요.');
       return;
     }
+    if (!nicknameInput.trim()) {
+      alert('가명 닉네임을 입력해 주세요.');
+      return;
+    }
 
-    completeProfileSetup(schoolInput.trim(), schoolLevel, gradeInput, regionInput.trim());
+    completeProfileSetup(schoolInput.trim(), schoolLevel, gradeInput, regionInput.trim(), nicknameInput.trim());
     onNavigate('feed');
   };
 
-  // Pre-generate a mock preview of nickname
-  const [previewNick, setPreviewNick] = useState('');
+  // Auto-generate customized/pseudonym nickname but allow customization
   useEffect(() => {
-    if (regionInput && schoolInput) {
+    if (!isNickCustomized && regionInput && schoolInput) {
       const shortSchool = schoolInput.replace('서울', '').replace('광주', '').replace('부산', '').replace('대구', '');
       const gradeShort = gradeInput.replace('학년', '');
-      setPreviewNick(`${regionInput.trim()} ${shortSchool.substring(0,4)}${gradeShort} [가명닉네임]`);
-    } else {
-      setPreviewNick('정보 입력 시 자동 생성됩니다');
+      
+      const adjectives = ['든든한', '영리한', '날렵한', '현명한', '자상한', '행복한', '명랑한', '신중한', '활기찬', '빛나는'];
+      const nouns = ['올빼미', '돌고래', '표범', '부엉이', '독수리', '사자', '토끼', '기린', '코끼리', '호랑이'];
+      const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const noun = nouns[Math.floor(Math.random() * nouns.length)];
+      
+      const regionShort = regionInput ? regionInput.trim() : '전국';
+      setNicknameInput(`${regionShort} ${shortSchool.substring(0,4)}${gradeShort} ${adj}${noun}`);
     }
-  }, [regionInput, schoolInput, gradeInput]);
+  }, [regionInput, schoolInput, gradeInput, isNickCustomized]);
 
   return (
     <div className="mobile-profile-setup-screen animate-slide-up">
@@ -183,14 +194,24 @@ export const AppProfileSetup = ({ onNavigate }) => {
           </select>
         </div>
 
-        {/* Real-time Pseudonym Preview */}
-        <div className="pseudonym-preview-box">
-          <span className="input-label" style={{ color: 'var(--primary)' }}>생성될 고정 닉네임 프리뷰</span>
-          <div className="pseudonym-tag">
-            ✨ {previewNick}
-          </div>
-          <p style={{ fontSize: '0.65rem', color: 'var(--neutral-muted)', marginTop: '8px' }}>
-            * 지역/학교/학년 입력 완료 시 형용사와 명사가 조합된 고유 익명 프로필이 완성되며, 임의 변경이 불가합니다.
+        {/* Customizable Pseudonym Input */}
+        <div className="input-group">
+          <label className="input-label" style={{ color: 'var(--primary)', fontWeight: '700' }}>
+            생성 가명 닉네임 (자동 생성 후 수정 가능)
+          </label>
+          <input 
+            type="text"
+            className="text-input"
+            style={{ fontWeight: '700', color: 'var(--primary)' }}
+            value={nicknameInput}
+            onChange={(e) => {
+              setNicknameInput(e.target.value);
+              setIsNickCustomized(true);
+            }}
+            placeholder="동네와 학교 입력 시 닉네임이 자동 조합됩니다"
+          />
+          <p style={{ fontSize: '0.65rem', color: 'var(--neutral-muted)', marginTop: '2px' }}>
+            * 지역/학교/학년 변경 시 닉네임이 자동 조합 추천되나, 직접 마음에 드는 닉네임으로 자유롭게 커스텀 수정할 수 있습니다.
           </p>
         </div>
 

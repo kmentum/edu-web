@@ -127,6 +127,22 @@ export const AppStateProvider = ({ children }) => {
   const [activeNotification, setActiveNotification] = useState(null);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
+  // --- N Badge 탭별 마지막 방문 시각 추적 상태 및 동기화 ---
+  const [lastTabVisited, setLastTabVisited] = useState(() => {
+    const saved = localStorage.getItem('edu_last_tab_visited');
+    return saved ? JSON.parse(saved) : { school: Date.now(), region: Date.now(), all: Date.now() };
+  });
+
+  useEffect(() => {
+    if (activeTab) {
+      setLastTabVisited(prev => {
+        const updated = { ...prev, [activeTab]: Date.now() };
+        localStorage.setItem('edu_last_tab_visited', JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [activeTab]);
+
   // --- V1/V2 LOCALSTORAGE SYNCS (Only runs when Supabase is NOT active) ---
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -611,10 +627,10 @@ export const AppStateProvider = ({ children }) => {
     setCurrentUser(null);
   };
 
-  const completeProfileSetup = async (schoolName, schoolLevel, grade, region) => {
+  const completeProfileSetup = async (schoolName, schoolLevel, grade, region, customPseudonym = '') => {
     if (!currentUser) return;
     
-    const pseudonym = generatePseudonym(region, schoolName, grade);
+    const pseudonym = customPseudonym.trim() || generatePseudonym(region, schoolName, grade);
     
     if (isSupabaseConfigured) {
       try {
@@ -651,6 +667,116 @@ export const AppStateProvider = ({ children }) => {
       region,
       pseudonym
     }));
+  };
+
+  const updateUserPseudonym = async (newPseudonym) => {
+    if (!currentUser) return false;
+    if (!newPseudonym.trim()) {
+      alert('올바른 닉네임을 입력해 주세요.');
+      return false;
+    }
+
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('profiles').update({
+          pseudonym: newPseudonym.trim()
+        }).eq('id', currentUser.uid);
+
+        if (error) throw error;
+      } catch (err) {
+        console.error('Supabase 닉네임 업데이트 실패:', err);
+        alert(`닉네임 업데이트 실패: ${err.message || JSON.stringify(err)}`);
+        return false;
+      }
+    }
+
+    setUsers(prev => prev.map(u => {
+      if (u.uid === currentUser.uid) {
+        return { ...u, pseudonym: newPseudonym.trim() };
+      }
+      return u;
+    }));
+
+    setCurrentUser(prev => ({
+      ...prev,
+      pseudonym: newPseudonym.trim()
+    }));
+
+    alert('가명 닉네임이 정상 수정되었습니다.');
+    return true;
+  };
+
+  const triggerRefresh = async () => {
+    if (isSupabaseConfigured) {
+      try {
+        const { data: profilesData } = await supabase.from('profiles').select('*');
+        if (profilesData) {
+          setUsers(profilesData.map(p => ({
+            uid: p.id,
+            email: p.email,
+            schoolName: p.school_name || '',
+            schoolLevel: p.school_level || '',
+            grade: p.grade || '',
+            region: p.region || '',
+            pseudonym: p.pseudonym || '',
+            points: p.points,
+            isBanned: p.is_banned,
+            verifiedAcademy: p.verified_academy || [],
+            purchasedPdfs: p.purchased_pdfs || [],
+            createdAt: p.created_at
+          })));
+        }
+
+        const { data: postsData } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+        if (postsData) {
+          setPosts(postsData.map(p => ({
+            id: p.id,
+            authorUid: p.author_uid,
+            authorName: p.author_name,
+            category: p.category,
+            title: p.title,
+            content: p.content,
+            schoolName: p.school_name || '',
+            region: p.region || '',
+            type: p.type,
+            likes: p.likes,
+            likedBy: p.liked_by || [],
+            scraps: p.scraps,
+            scrapedBy: p.scraped_by || [],
+            reports: p.reports,
+            reportedBy: p.reported_by || [],
+            commentsCount: p.comments_count,
+            isAiFlaged: p.is_ai_flagged,
+            aiFlagReason: p.ai_flag_reason || '',
+            isBanned: p.is_banned,
+            createdAt: p.created_at,
+            hasReceiptBadge: p.has_receipt_badge,
+            qnaPoints: p.qna_points,
+            qnaResolved: p.qna_resolved,
+            pollOptions: p.poll_options
+          })));
+        }
+
+        const { data: commentsData } = await supabase.from('comments').select('*');
+        if (commentsData) {
+          setComments(commentsData.map(c => ({
+            id: c.id,
+            postId: c.post_id,
+            authorUid: c.author_uid,
+            authorName: c.author_name,
+            content: c.content,
+            createdAt: c.created_at,
+            isAccepted: c.is_accepted,
+            grade: c.grade || '',
+            isBanned: c.is_banned
+          })));
+        }
+      } catch (err) {
+        console.error('Supabase 데이터 새로고침 실패:', err);
+      }
+    } else {
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
   };
 
   // 3. Community Feed Actions
@@ -1328,6 +1454,9 @@ export const AppStateProvider = ({ children }) => {
       loginWithGoogle,
       logout,
       completeProfileSetup,
+      updateUserPseudonym,
+      triggerRefresh,
+      lastTabVisited,
       createPost,
       deletePost,
       restorePost,

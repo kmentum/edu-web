@@ -1149,3 +1149,45 @@ button:active, .post-card:active, .calendar-day:active, .calendar-event-card:act
   margin-top: 16px;
   padding: 0 10px;
 }
+
+/* --- Community Tab N Badge Styles --- */
+.tab-new-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--accent-red);
+  color: var(--white);
+  font-size: 0.55rem;
+  font-weight: 800;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  margin-left: 2px;
+  line-height: 1;
+}
+
+/* --- Pull-to-Refresh Styles --- */
+.pull-to-refresh-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+  background-color: #f1f5f9;
+  width: 100%;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--neutral-muted);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+@keyframes spinnerRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinner-rotate {
+  animation: spinnerRotate 1s linear infinite;
+  display: inline-block;
+  font-size: 0.9rem;
+}

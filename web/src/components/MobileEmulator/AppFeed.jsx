@@ -12,7 +12,9 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
     showNotifDropdown, 
     setShowNotifDropdown, 
     notifications, 
-    markNotificationsAsRead 
+    markNotificationsAsRead,
+    lastTabVisited,
+    triggerRefresh
   } = useContext(AppStateContext);
 
   // Sub-category filter: '전체', '자유', '질문', '리뷰'
@@ -21,6 +23,90 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showHeader, setShowHeader] = useState(true);
   const lastScrollTopRef = useRef(0);
+
+  // --- Pull-to-Refresh Gesture States ---
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const touchStartYRef = useRef(0);
+  const isAtTopRef = useRef(true);
+
+  const handleTouchStart = (e) => {
+    if (isRefreshing) return;
+    const scrollTop = e.currentTarget.scrollTop;
+    if (scrollTop === 0) {
+      isAtTopRef.current = true;
+      touchStartYRef.current = e.touches[0].clientY;
+      setIsPulling(true);
+    } else {
+      isAtTopRef.current = false;
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isPulling || isRefreshing || !isAtTopRef.current) return;
+    const currentY = e.touches[0].clientY;
+    const diffY = currentY - touchStartYRef.current;
+    
+    if (diffY > 0) {
+      const distance = Math.min(diffY * 0.45, 80);
+      setPullDistance(distance);
+      if (diffY > 5 && e.cancelable) {
+        e.preventDefault();
+      }
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (!isPulling) return;
+    setIsPulling(false);
+    
+    if (pullDistance > 55) {
+      setIsRefreshing(true);
+      setPullDistance(55);
+      
+      try {
+        await triggerRefresh();
+      } catch (err) {
+        console.error('Refresh error:', err);
+      } finally {
+        setTimeout(() => {
+          setIsRefreshing(false);
+          setPullDistance(0);
+        }, 500);
+      }
+    } else {
+      setPullDistance(0);
+    }
+  };
+
+  const hasNewPost = (tab) => {
+    if (activeTab === tab) return false;
+    if (!lastTabVisited || !lastTabVisited[tab]) return false;
+
+    const visitedTime = lastTabVisited[tab];
+
+    return posts.some(post => {
+      if (post.isBanned) return false;
+      const isCalPost = post.id.startsWith('post-cal-');
+      
+      if (tab === 'school') {
+        return (post.type === 'school' || isCalPost) && 
+               post.schoolName === currentUser.schoolName && 
+               new Date(post.createdAt).getTime() > visitedTime;
+      }
+      if (tab === 'region') {
+        return post.type === 'region' && 
+               post.region === currentUser.region && 
+               new Date(post.createdAt).getTime() > visitedTime;
+      }
+      if (tab === 'all') {
+        return post.type === 'all' && 
+               new Date(post.createdAt).getTime() > visitedTime;
+      }
+      return false;
+    });
+  };
 
   const handleScroll = (e) => {
     const scrollTop = e.currentTarget.scrollTop;
@@ -274,26 +360,65 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
         <button 
           className={`mobile-tab-btn ${activeTab === 'school' ? 'active' : ''}`}
           onClick={() => setActiveTab('school')}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}
         >
           우리 학교
+          {hasNewPost('school') && <span className="tab-new-badge">N</span>}
         </button>
         <button 
           className={`mobile-tab-btn ${activeTab === 'region' ? 'active' : ''}`}
           onClick={() => setActiveTab('region')}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}
         >
           우리 동네
+          {hasNewPost('region') && <span className="tab-new-badge">N</span>}
         </button>
         <button 
           className={`mobile-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
           onClick={() => setActiveTab('all')}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}
         >
           전체 광장
+          {hasNewPost('all') && <span className="tab-new-badge">N</span>}
         </button>
       </div>
       </div>
 
       {/* Filter Category & Scroll View */}
-      <div className="mobile-content-area" onScroll={handleScroll}>
+      <div 
+        className="mobile-content-area" 
+        onScroll={handleScroll}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Pull-to-Refresh Indicator */}
+        {(pullDistance > 0 || isRefreshing) && (
+          <div 
+            className="pull-to-refresh-indicator"
+            style={{
+              height: `${pullDistance}px`,
+              opacity: Math.min(pullDistance / 45, 1),
+              transition: isPulling ? 'none' : 'height 0.25s ease, opacity 0.25s ease'
+            }}
+          >
+            {isRefreshing ? (
+              <span className="spinner-rotate">🔄</span>
+            ) : (
+              <span style={{ 
+                display: 'inline-block',
+                transform: `rotate(${Math.min(pullDistance * 4.5, 360)}deg)`,
+                transition: 'none'
+              }}>
+                ⬇️
+              </span>
+            )}
+            <span>
+              {isRefreshing ? '데이터 동기화 중...' : pullDistance > 55 ? '놓아서 새로고침' : '아래로 당겨서 새로고침'}
+            </span>
+          </div>
+        )}
+
         {/* Category Badges */}
         <div className="feed-filter-bar">
           {['전체', '자유', '질문', '리뷰'].map(cat => (
