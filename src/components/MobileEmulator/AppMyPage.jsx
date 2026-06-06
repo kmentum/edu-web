@@ -1,35 +1,15 @@
 import React, { useContext, useState } from 'react';
 import { AppStateContext } from '../../context/AppStateContext';
+import { mockPdfs } from '../../data/mockPdfData';
+import AppPdfViewerModal from './AppPdfViewerModal';
 
 export const AppMyPage = ({ onNavigate }) => {
-  const { currentUser, updateUserPoints, logout } = useContext(AppStateContext);
-
-  const [purchasedPdfs, setPurchasedPdfs] = useState([]);
+  const { currentUser, logout } = useContext(AppStateContext);
+  const [selectedPdf, setSelectedPdf] = useState(null);
 
   if (!currentUser) return null;
 
-  const pdfCatalog = [
-    { id: 'pdf-01', title: '대치동 초등 황소수학 입반 테스트 기출 경향 분석집', price: 3000, desc: '대치동 최상위 학원 합격생 100명의 오답 유형 분석 자료' },
-    { id: 'pdf-02', title: '반포/서초 학원가 셔틀버스 노선도 및 승하차 위치 가이드', price: 1500, desc: '삼호가든 사거리 학원 셔틀 승차 안내 및 실시간 동선 꿀팁' },
-    { id: 'pdf-03', title: '수능 만점자 엄마가 작성한 자녀 스마트폰 조절 계약서 양식', price: 2000, desc: '자녀가 자발적으로 참여하는 디지털 디톡스 규칙 설정 가이드' }
-  ];
-
-  const handleBuyPdf = (pdf) => {
-    if (purchasedPdfs.includes(pdf.id)) {
-      alert('이미 구매하신 가이드입니다.');
-      return;
-    }
-    if (currentUser.points < pdf.price) {
-      alert('포인트가 부족합니다. 영수증 인증이나 Q&A 활동으로 포인트를 모아보세요!');
-      return;
-    }
-
-    if (window.confirm(`[${pdf.title}]\n${pdf.price}P에 구매하시겠습니까?`)) {
-      updateUserPoints(currentUser.uid, -pdf.price);
-      setPurchasedPdfs([...purchasedPdfs, pdf.id]);
-      alert('구매가 완료되었습니다! "구매 완료" 상태에서 즉시 다운로드 가능합니다.');
-    }
-  };
+  const pdfCatalog = mockPdfs;
 
   return (
     <div className="mobile-app-layout animate-fade-in" style={{ backgroundColor: 'white', height: '100%' }}>
@@ -98,7 +78,7 @@ export const AppMyPage = ({ onNavigate }) => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {pdfCatalog.map(pdf => {
-              const isPurchased = purchasedPdfs.includes(pdf.id);
+              const isPurchased = (currentUser.purchasedPdfs || []).includes(pdf.id);
               
               return (
                 <div 
@@ -118,17 +98,19 @@ export const AppMyPage = ({ onNavigate }) => {
                       {pdf.title}
                     </h5>
                     <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent-gold)' }}>
-                      {pdf.price.toLocaleString()}P
+                      {pdf.pricePoints.toLocaleString()}P
                     </span>
                   </div>
-                  <p style={{ fontSize: '0.68rem', color: 'var(--neutral-muted)' }}>{pdf.desc}</p>
+                  <p style={{ fontSize: '0.68rem', color: 'var(--neutral-muted)' }}>
+                    {pdf.schoolName} • 작성 학부모: {pdf.authorName.split(' ').slice(-1)[0]}
+                  </p>
                   
                   <button 
-                    onClick={() => handleBuyPdf(pdf)}
+                    onClick={() => setSelectedPdf(pdf)}
                     className={`action-btn ${isPurchased ? 'action-btn-success' : 'action-btn-primary'}`}
                     style={{ alignSelf: 'flex-end', fontSize: '0.65rem', marginTop: '6px', padding: '4px 10px' }}
                   >
-                    {isPurchased ? '📥 다운로드 받기 (구매완료)' : '포인트로 구매'}
+                    {isPurchased ? '📖 열람 및 다운로드' : '자료 보기 및 구매'}
                   </button>
                 </div>
               );
@@ -137,6 +119,14 @@ export const AppMyPage = ({ onNavigate }) => {
         </div>
 
       </div>
+
+      {/* PDF 뷰어/구매 모달 */}
+      {selectedPdf && (
+        <AppPdfViewerModal 
+          pdf={selectedPdf} 
+          onClose={() => setSelectedPdf(null)} 
+        />
+      )}
     </div>
   );
 };

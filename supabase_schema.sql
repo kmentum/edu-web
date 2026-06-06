@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   points INTEGER DEFAULT 1000,
   is_banned BOOLEAN DEFAULT FALSE,
   verified_academy TEXT[] DEFAULT '{}',
+  purchased_pdfs TEXT[] DEFAULT '{}',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
 );
 

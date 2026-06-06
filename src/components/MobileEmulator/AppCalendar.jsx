@@ -1,6 +1,8 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
 import { AppStateContext } from '../../context/AppStateContext';
 import { mockAcademicCalendars } from '../../data/schoolData';
+import { mockPdfs } from '../../data/mockPdfData';
+import AppPdfViewerModal from './AppPdfViewerModal';
 
 export const AppCalendar = () => {
   const { 
@@ -27,6 +29,9 @@ export const AppCalendar = () => {
   const [activeEvent, setActiveEvent] = useState(null);
   const [gradeFilter, setGradeFilter] = useState('전체');
   const [drawerCommentText, setDrawerCommentText] = useState('');
+  const [selectedPdf, setSelectedPdf] = useState(null);
+
+  const relatedPdfs = mockPdfs.filter(pdf => pdf.schoolName === currentUser.schoolName);
   
   const commentsEndRef = useRef(null);
 
@@ -373,6 +378,73 @@ export const AppCalendar = () => {
 
             {/* Comments List scrolling viewport */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', background: '#fafafa' }}>
+              {/* UTIL-06: 관련 추천 PDF 자료 리스트 */}
+              {relatedPdfs.length > 0 && (
+                <div style={{
+                  background: 'var(--neutral-light)',
+                  border: '1px solid rgba(79, 70, 229, 0.1)',
+                  borderRadius: '16px',
+                  padding: '12px',
+                  marginBottom: '6px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                  flexShrink: 0
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: '800', color: 'var(--neutral-dark)' }}>
+                      🎓 {currentUser.schoolName.substring(0, 6)}... 맞춤 내신/족보 자료
+                    </span>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: '700' }}>추천</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', whiteSpace: 'nowrap' }} className="no-scrollbar">
+                    {relatedPdfs.map(pdf => {
+                      const isPdfPurchased = (currentUser.purchasedPdfs || []).includes(pdf.id);
+                      return (
+                        <div 
+                          key={pdf.id}
+                          onClick={() => setSelectedPdf(pdf)}
+                          style={{
+                            background: 'white',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '12px',
+                            padding: '8px 10px',
+                            minWidth: '200px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                          }}
+                        >
+                          <div style={{ fontSize: '0.58rem', color: 'var(--neutral-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>{pdf.category}</span>
+                            <span style={{ color: isPdfPurchased ? 'var(--secondary)' : 'var(--accent-gold)', fontWeight: '700' }}>
+                              {isPdfPurchased ? '📖 소장 중' : `💎 ${pdf.pricePoints.toLocaleString()}P`}
+                            </span>
+                          </div>
+                          <div style={{ 
+                            fontSize: '0.7rem', 
+                            fontWeight: '700', 
+                            color: 'var(--neutral-dark)', 
+                            overflow: 'hidden', 
+                            textOverflow: 'ellipsis', 
+                            whiteSpace: 'nowrap' 
+                          }}>
+                            {pdf.title}
+                          </div>
+                          <div style={{ fontSize: '0.58rem', color: 'var(--neutral-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>by {pdf.authorName.split(' ').slice(-1)[0]}</span>
+                            <span>⭐ {pdf.rating.toFixed(1)} ({pdf.salesCount}부)</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {drawerComments.length === 0 ? (
                 <p style={{ textAlign: 'center', color: 'var(--neutral-muted)', fontSize: '0.75rem', margin: 'auto' }}>
                   아직 작성된 학사일정 댓글이 없습니다.<br/>
@@ -448,6 +520,13 @@ export const AppCalendar = () => {
         </>
       )}
 
+      {/* UTIL-06: PDF 뷰어/구매 모달 */}
+      {selectedPdf && (
+        <AppPdfViewerModal 
+          pdf={selectedPdf} 
+          onClose={() => setSelectedPdf(null)} 
+        />
+      )}
     </div>
   );
 };

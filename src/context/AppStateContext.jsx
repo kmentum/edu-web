@@ -186,7 +186,8 @@ export const AppStateProvider = ({ children }) => {
               email: user.email || '',
               points: 1000,
               verified_academy: [],
-              pseudonym: ''
+              pseudonym: '',
+              purchased_pdfs: []
             };
             
             const { error: insertErr } = await supabase
@@ -208,6 +209,7 @@ export const AppStateProvider = ({ children }) => {
                 points: 1000,
                 isBanned: false,
                 verifiedAcademy: [],
+                purchasedPdfs: [],
                 createdAt: new Date().toISOString()
               };
             }
@@ -224,6 +226,7 @@ export const AppStateProvider = ({ children }) => {
               points: profile.points,
               isBanned: profile.is_banned,
               verifiedAcademy: profile.verified_academy || [],
+              purchasedPdfs: profile.purchased_pdfs || [],
               createdAt: profile.created_at
             };
           }
@@ -286,6 +289,7 @@ export const AppStateProvider = ({ children }) => {
             points: p.points,
             isBanned: p.is_banned,
             verifiedAcademy: p.verified_academy || [],
+            purchasedPdfs: p.purchased_pdfs || [],
             createdAt: p.created_at
           })));
         }
@@ -429,6 +433,7 @@ export const AppStateProvider = ({ children }) => {
       points: 1000,
       isBanned: false,
       verifiedAcademy: [],
+      purchasedPdfs: [],
       createdAt: new Date().toISOString(),
     };
     
@@ -438,7 +443,8 @@ export const AppStateProvider = ({ children }) => {
           id: newUid,
           email,
           points: 1000,
-          verified_academy: []
+          verified_academy: [],
+          purchased_pdfs: []
         });
       } catch (err) {
         console.error('Supabase 회원등록 실패:', err);
@@ -1132,6 +1138,50 @@ export const AppStateProvider = ({ children }) => {
     }));
   };
 
+  const purchasePdf = async (pdfId, pricePoints) => {
+    if (!currentUser) return false;
+
+    const alreadyPurchased = (currentUser.purchasedPdfs || []).includes(pdfId);
+    if (alreadyPurchased) {
+      alert('이미 구매한 자료입니다.');
+      return false;
+    }
+
+    if (currentUser.points < pricePoints) {
+      alert(`보유하신 포인트(${currentUser.points}P)가 부족합니다. 영수증을 인증해 포인트를 충전해 주세요.`);
+      return false;
+    }
+
+    const nextPoints = currentUser.points - pricePoints;
+    const nextPurchased = [...(currentUser.purchasedPdfs || []), pdfId];
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('profiles').update({
+          points: nextPoints,
+          purchased_pdfs: nextPurchased
+        }).eq('id', currentUser.uid);
+      } catch (err) {
+        console.error('Supabase PDF 구매 실패:', err);
+      }
+    }
+
+    setUsers(prev => prev.map(u => {
+      if (u.uid === currentUser.uid) {
+        return { ...u, points: nextPoints, purchasedPdfs: nextPurchased };
+      }
+      return u;
+    }));
+
+    setCurrentUser(prev => ({
+      ...prev,
+      points: nextPoints,
+      purchasedPdfs: nextPurchased
+    }));
+
+    return true;
+  };
+
   return (
     <AppStateContext.Provider value={{
       users,
@@ -1174,6 +1224,7 @@ export const AppStateProvider = ({ children }) => {
       toggleSubscribeEvent,
       clearNotifications,
       markNotificationsAsRead,
+      purchasePdf,
     }}>
       {children}
     </AppStateContext.Provider>
