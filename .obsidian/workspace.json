@@ -185,6 +185,8 @@
   },
   "active": "7a3236317b4accc5",
   "lastOpenFiles": [
+    "android/app/src/main/assets/public/assets/index-B01iIv6r.js",
+    "dist/assets/index-B01iIv6r.js",
     "ios/App/App/public/assets/index-BVS3uE9X.js",
     "ios/App/App/public/assets/index-BTfb_Eyb.css",
     "android/app/src/main/assets/public/assets/index-BVS3uE9X.js",
@@ -194,8 +196,6 @@
     "src/utils/masking.js",
     "src/utils",
     "supabase_schema.sql",
-    "src/lib/supabaseClient.js",
-    "src/lib",
     "node_modules/@supabase/auth-js/migrations/README.md",
     "node_modules/@supabase/auth-js/migrations/lockless-coordination.md",
     "node_modules/@supabase/auth-js/AGENTS.md",

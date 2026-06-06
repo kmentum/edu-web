@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">SchoolEduWeb</string>
-    <string name="title_activity_main">SchoolEduWeb</string>
-    <string name="package_name">com.kmentum.eduweb</string>
-    <string name="custom_url_scheme">com.kmentum.eduweb</string>
+    <string name="app_name">Barnet</string>
+    <string name="title_activity_main">Barnet</string>
+    <string name="package_name">com.kmentum.barnet</string>
+    <string name="custom_url_scheme">com.kmentum.barnet</string>
 </resources>

@@ -55,7 +55,7 @@ export const AppAuth = ({ onNavigate }) => {
     <div className="mobile-auth-screen animate-fade-in">
       <div className="auth-header">
         <div className="auth-icon"> must-sso 👨‍👩‍👧‍👦</div>
-        <h2>학부모 교육 커뮤니티</h2>
+        <h2>학부모 익명 커뮤니티 반넷 (Barnet)</h2>
         <p>구글 SSO 기반 인증으로 안심하고 대화하세요</p>
         
         {/* Connection status badge */}
