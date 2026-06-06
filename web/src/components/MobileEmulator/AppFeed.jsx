@@ -24,59 +24,62 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
   const [showHeader, setShowHeader] = useState(true);
   const lastScrollTopRef = useRef(0);
 
-  // --- Pull-to-Refresh Gesture States ---
-  const [pullDistance, setPullDistance] = useState(0);
-  const [isPulling, setIsPulling] = useState(false);
+  // --- Pull-to-Refresh Gesture States (ref 기반으로 클로저 이슈 제거) ---
+  const [pullDisplayDist, setPullDisplayDist] = useState(0); // 렌더링용
   const [isRefreshing, setIsRefreshing] = useState(false);
   const touchStartYRef = useRef(0);
-  const isAtTopRef = useRef(true);
+  const isPullingRef = useRef(false);
+  const pullDistRef = useRef(0);
+  const isRefreshingRef = useRef(false);
+  const THRESHOLD = 60; // 새로고침 발동 임계치(px)
 
   const handleTouchStart = (e) => {
-    if (isRefreshing) return;
+    if (isRefreshingRef.current) return;
     const scrollTop = e.currentTarget.scrollTop;
-    if (scrollTop === 0) {
-      isAtTopRef.current = true;
+    if (scrollTop <= 0) {
+      isPullingRef.current = true;
       touchStartYRef.current = e.touches[0].clientY;
-      setIsPulling(true);
     } else {
-      isAtTopRef.current = false;
+      isPullingRef.current = false;
     }
   };
 
   const handleTouchMove = (e) => {
-    if (!isPulling || isRefreshing || !isAtTopRef.current) return;
-    const currentY = e.touches[0].clientY;
-    const diffY = currentY - touchStartYRef.current;
-    
+    if (!isPullingRef.current || isRefreshingRef.current) return;
+    const diffY = e.touches[0].clientY - touchStartYRef.current;
     if (diffY > 0) {
-      const distance = Math.min(diffY * 0.45, 80);
-      setPullDistance(distance);
-      if (diffY > 5 && e.cancelable) {
-        e.preventDefault();
-      }
+      // 고무줄 감쇄 곡선
+      const dist = Math.min(Math.pow(diffY, 0.75) * 2.5, 80);
+      pullDistRef.current = dist;
+      setPullDisplayDist(dist);
+      if (diffY > 8 && e.cancelable) e.preventDefault();
     }
   };
 
   const handleTouchEnd = async () => {
-    if (!isPulling) return;
-    setIsPulling(false);
-    
-    if (pullDistance > 55) {
+    if (!isPullingRef.current) return;
+    isPullingRef.current = false;
+    const dist = pullDistRef.current;
+
+    if (dist >= THRESHOLD) {
+      isRefreshingRef.current = true;
       setIsRefreshing(true);
-      setPullDistance(55);
-      
+      setPullDisplayDist(THRESHOLD);
       try {
         await triggerRefresh();
       } catch (err) {
         console.error('Refresh error:', err);
       } finally {
         setTimeout(() => {
+          isRefreshingRef.current = false;
           setIsRefreshing(false);
-          setPullDistance(0);
-        }, 500);
+          setPullDisplayDist(0);
+          pullDistRef.current = 0;
+        }, 700);
       }
     } else {
-      setPullDistance(0);
+      setPullDisplayDist(0);
+      pullDistRef.current = 0;
     }
   };
 
@@ -393,31 +396,61 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
         onTouchEnd={handleTouchEnd}
       >
         {/* Pull-to-Refresh Indicator */}
-        {(pullDistance > 0 || isRefreshing) && (
-          <div 
-            className="pull-to-refresh-indicator"
-            style={{
-              height: `${pullDistance}px`,
-              opacity: Math.min(pullDistance / 45, 1),
-              transition: isPulling ? 'none' : 'height 0.25s ease, opacity 0.25s ease'
-            }}
-          >
-            {isRefreshing ? (
-              <span className="spinner-rotate">🔄</span>
-            ) : (
-              <span style={{ 
-                display: 'inline-block',
-                transform: `rotate(${Math.min(pullDistance * 4.5, 360)}deg)`,
-                transition: 'none'
-              }}>
-                ⬇️
+        {(pullDisplayDist > 0 || isRefreshing) && (() => {
+          const progress = Math.min(pullDisplayDist / THRESHOLD, 1);
+          // SVG 도넛바 파라미터
+          const r = 14;
+          const circ = 2 * Math.PI * r;
+          const dashOffset = circ * (1 - (isRefreshing ? 1 : progress));
+          return (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                overflow: 'hidden',
+                height: isRefreshing ? `${THRESHOLD}px` : `${pullDisplayDist}px`,
+                transition: isPullingRef.current ? 'none' : 'height 0.28s ease',
+                paddingBottom: '6px',
+                gap: '4px',
+              }}
+            >
+              {/* 도넛 프로그레스 원 */}
+              <svg
+                width="34" height="34"
+                style={{
+                  transform: isRefreshing ? undefined : `rotate(${-90 + progress * 360}deg)`,
+                  animation: isRefreshing ? 'spinDonut 0.8s linear infinite' : undefined,
+                }}
+                viewBox="0 0 36 36"
+              >
+                {/* 배경 트랙 */}
+                <circle
+                  cx="18" cy="18" r={r}
+                  fill="none"
+                  stroke="#e2e8f0"
+                  strokeWidth="3"
+                />
+                {/* 진행 Arc */}
+                <circle
+                  cx="18" cy="18" r={r}
+                  fill="none"
+                  stroke={progress >= 1 || isRefreshing ? 'var(--primary)' : '#94a3b8'}
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeDasharray={`${circ}`}
+                  strokeDashoffset={isRefreshing ? 0 : dashOffset}
+                  transform="rotate(-90 18 18)"
+                  style={{ transition: isPullingRef.current ? 'none' : 'stroke-dashoffset 0.1s' }}
+                />
+              </svg>
+              <span style={{ fontSize: '0.58rem', color: 'var(--neutral-muted)', fontWeight: '600' }}>
+                {isRefreshing ? '새로고침 중...' : progress >= 1 ? '놓으면 새로고침' : '당겨서 새로고침'}
               </span>
-            )}
-            <span>
-              {isRefreshing ? '데이터 동기화 중...' : pullDistance > 55 ? '놓아서 새로고침' : '아래로 당겨서 새로고침'}
-            </span>
-          </div>
-        )}
+            </div>
+          );
+        })()}
 
         {/* Category Badges */}
         <div className="feed-filter-bar">

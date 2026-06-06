@@ -1359,3 +1359,9 @@ button:active, .post-card:active, .calendar-day:active, .calendar-event-card:act
 .phone-screen.dark-theme .mypage-menu-item {
   background-color: #0f172a !important;
 }
+
+/* --- Pull-to-Refresh Donut Spinner Animation --- */
+@keyframes spinDonut {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
