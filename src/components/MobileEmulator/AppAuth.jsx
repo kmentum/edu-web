@@ -7,7 +7,9 @@ export const AppAuth = ({ onNavigate }) => {
   
   const [customName, setCustomName] = useState('');
   const [customEmail, setCustomEmail] = useState('');
-  const [showDemoOptions, setShowDemoOptions] = useState(!isSupabaseConfigured);
+  
+  const isNativeApp = typeof window !== 'undefined' && !!window.Capacitor;
+  const [showDemoOptions, setShowDemoOptions] = useState(!isSupabaseConfigured || isNativeApp);
 
   // Only show active or banned mock users for testing
   const mockLoginAccounts = users.filter(u => u.uid.startsWith('google-user-'));
@@ -25,7 +27,15 @@ export const AppAuth = ({ onNavigate }) => {
   };
 
   const handleRealGoogleLogin = async () => {
-    if (isSupabaseConfigured) {
+    if (isNativeApp) {
+      if (window.confirm('⚠️ 모바일 앱 환경 안내:\n모바일 앱(Capacitor) 환경에서는 실제 구글 소셜 로그인 완료 후 앱으로 자동 복귀하려면 기기 딥링크(Custom URL Scheme) 및 Supabase 리다이렉트 설정이 추가로 완료되어야 합니다.\n\n원활한 에뮬레이터/기기 테스트를 위해 하단의 [데모 시뮬레이션 로그인]을 사용하시는 것을 강력하게 권장합니다.\n\n그래도 구글 로그인을 계속 진행하시겠습니까?')) {
+        if (isSupabaseConfigured) {
+          await loginWithGoogle();
+        } else {
+          alert('⚠️ Supabase 미설정:\n현재 로컬 데모 모드입니다. 구글 실시간 로그인을 이용하려면 .env에 Supabase 환경변수를 입력해 주세요.');
+        }
+      }
+    } else if (isSupabaseConfigured) {
       await loginWithGoogle();
     } else {
       alert('⚠️ Supabase 미설정:\n현재 로컬 데모 모드입니다. 구글 실시간 로그인을 이용하려면 .env에 Supabase 환경변수를 입력해 주세요.\n\n하단의 [데모 시뮬레이션 로그인 열기]를 클릭해 테스트 계정으로 접속할 수 있습니다.');
