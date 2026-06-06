@@ -667,8 +667,8 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
         </div>
 
         {/* Tip banner */}
-        <div style={{ fontSize: '0.65rem', color: 'var(--neutral-muted)', background: 'var(--neutral-bg)', padding: '10px', borderRadius: '8px' }}>
-          💡 **팁**: 학원 결제 내역이나 영수증을 인증받은 후 '리뷰' 글을 작성하시면, 닉네임 옆에 **[학원 영수증 인증]** 배지가 달려 글의 신뢰도가 크게 올라갑니다! (영수증 인증은 아래 '영수증' 탭에서 진행)
+        <div style={{ fontSize: '0.65rem', color: 'var(--neutral-muted)', background: 'var(--neutral-bg)', padding: '8px 10px', borderRadius: '8px' }}>
+          💡 영수증 인증 후 리뷰를 작성하면 신뢰 배지가 달립니다.
         </div>
       </div>
     </div>
