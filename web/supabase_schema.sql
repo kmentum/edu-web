@@ -81,3 +81,19 @@ ALTER TABLE public.profiles DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.posts DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.comments DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.receipts DISABLE ROW LEVEL SECURITY;
+
+-- 6. 이메일 인증 자동 승인 트리거 (개발 및 모의 검증 편의용)
+-- 가입 즉시 인증 절차 없이 바로 로그인이 가능하도록 auth.users 테이블에 이메일 자동 확인(Confirm) 처리를 수행합니다.
+CREATE OR REPLACE FUNCTION public.auto_confirm_email()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.email_confirmed_at = NOW();
+  NEW.confirmed_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER on_auth_user_created_confirm_email
+  BEFORE INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.auto_confirm_email();
