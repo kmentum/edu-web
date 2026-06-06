@@ -14,14 +14,14 @@ export const EmulatorContainer = () => {
     notifications,
     activeNotification,
     clearNotifications,
-    markNotificationsAsRead
+    markNotificationsAsRead,
+    showNotifDropdown,
+    setShowNotifDropdown
   } = useContext(AppStateContext);
   
   // Custom router screen states: 'auth', 'profile-setup', 'feed', 'post-detail', 'add-post', 'receipt', 'calendar', 'mypage'
   const [currentScreen, setCurrentScreen] = useState('auth');
   const [selectedPostId, setSelectedPostId] = useState(null);
-
-  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
   // Sync screen router state with authentication boundaries
   React.useEffect(() => {
@@ -73,7 +73,7 @@ export const EmulatorContainer = () => {
       case 'receipt':
         return <AppReceiptAuth onNavigate={handleNavigate} />;
       case 'calendar':
-        return <AppCalendar />;
+        return <AppCalendar onNavigate={handleNavigate} />;
       case 'mypage':
         return <AppMyPage onNavigate={handleNavigate} />;
       default:
@@ -82,15 +82,15 @@ export const EmulatorContainer = () => {
   };
 
   // Highlight bottom navigation tab
-  const getActiveTab = () => {
-    if (['feed', 'post-detail', 'add-post'].includes(currentScreen)) return 'feed';
+  const getActiveNavTab = () => {
+    if (['feed', 'post-detail'].includes(currentScreen)) return 'feed';
     if (currentScreen === 'receipt') return 'receipt';
     if (currentScreen === 'calendar') return 'calendar';
-    if (currentScreen === 'mypage') return 'mypage';
+    if (currentScreen === 'add-post') return 'add-post';
     return '';
   };
 
-  const activeTab = getActiveTab();
+  const activeNavTab = getActiveNavTab();
 
   return (
     <div className="simulator-section">
@@ -113,39 +113,7 @@ export const EmulatorContainer = () => {
         {/* Dynamic Screen Area */}
         <div className="phone-screen">
           
-          {/* V2: Floating Notification Bell Overlay */}
-          {currentUser && currentScreen !== 'auth' && currentScreen !== 'profile-setup' && currentScreen !== 'add-post' && (
-            <div className="notif-bell-container">
-              <button 
-                onClick={() => {
-                  setShowNotifDropdown(!showNotifDropdown);
-                  markNotificationsAsRead();
-                }}
-                className="notif-bell-btn"
-                title="푸시 알림 내역"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                </svg>
-                {notifications.filter(n => n.unread).length > 0 && (
-                  <span style={{
-                    position: 'absolute',
-                    top: '-3px',
-                    right: '-3px',
-                    backgroundColor: 'var(--accent-red)',
-                    color: 'white',
-                    fontSize: '0.58rem',
-                    fontWeight: '700',
-                    padding: '1px 5px',
-                    borderRadius: '10px'
-                  }}>
-                    {notifications.filter(n => n.unread).length}
-                  </span>
-                )}
-              </button>
-            </div>
-          )}
+
 
           {/* V2: Notification Dropdown Center Card */}
           {showNotifDropdown && currentUser && (
@@ -211,7 +179,7 @@ export const EmulatorContainer = () => {
         {currentUser && currentScreen !== 'auth' && currentScreen !== 'profile-setup' && (
           <div className="mobile-nav-bar">
             <button 
-              className={`nav-item-btn ${activeTab === 'feed' ? 'active' : ''}`}
+              className={`nav-item-btn ${activeNavTab === 'feed' ? 'active' : ''}`}
               onClick={() => handleNavigate('feed')}
             >
               <span className="nav-icon">
@@ -223,7 +191,7 @@ export const EmulatorContainer = () => {
               <span>커뮤니티</span>
             </button>
             <button 
-              className={`nav-item-btn ${activeTab === 'calendar' ? 'active' : ''}`}
+              className={`nav-item-btn ${activeNavTab === 'calendar' ? 'active' : ''}`}
               onClick={() => handleNavigate('calendar')}
             >
               <span className="nav-icon">
@@ -243,7 +211,7 @@ export const EmulatorContainer = () => {
               <span>학사일정</span>
             </button>
             <button 
-              className={`nav-item-btn ${activeTab === 'receipt' ? 'active' : ''}`}
+              className={`nav-item-btn ${activeNavTab === 'receipt' ? 'active' : ''}`}
               onClick={() => handleNavigate('receipt')}
             >
               <span className="nav-icon">
@@ -257,16 +225,16 @@ export const EmulatorContainer = () => {
               <span>영수증</span>
             </button>
             <button 
-              className={`nav-item-btn ${activeTab === 'mypage' ? 'active' : ''}`}
-              onClick={() => handleNavigate('mypage')}
+              className={`nav-item-btn nav-write-btn ${activeNavTab === 'add-post' ? 'active' : ''}`}
+              onClick={() => handleNavigate('add-post')}
             >
               <span className="nav-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
               </span>
-              <span>마이페이지</span>
+              <span>글쓰기</span>
             </button>
           </div>
         )}

@@ -96,6 +96,16 @@ export const AppStateProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
+  // Global activeTab state for community feed (persistent across unmounts)
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = localStorage.getItem('edu_active_tab');
+    return saved || 'all';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('edu_active_tab', activeTab);
+  }, [activeTab]);
+
   // School calendars data
   const [customCalendarEvents, setCustomCalendarEvents] = useState(() => {
     const saved = localStorage.getItem('edu_custom_calendar');
@@ -115,6 +125,7 @@ export const AppStateProvider = ({ children }) => {
   });
 
   const [activeNotification, setActiveNotification] = useState(null);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
   // --- V1/V2 LOCALSTORAGE SYNCS (Only runs when Supabase is NOT active) ---
   useEffect(() => {
@@ -1297,10 +1308,14 @@ export const AppStateProvider = ({ children }) => {
       receipts,
       currentUser,
       customCalendarEvents,
+      activeTab,
+      setActiveTab,
       calendarComments,
       subscribedEvents,
       notifications,
       activeNotification,
+      showNotifDropdown,
+      setShowNotifDropdown,
       resetToFactoryDefaults,
       loginWithMockAccount,
       loginCustomEmail,

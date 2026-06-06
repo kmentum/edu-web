@@ -572,7 +572,7 @@
 
 /* Bottom Nav Menu */
 .mobile-nav-bar {
-  height: 56px;
+  height: 60px;
   background-color: var(--white);
   border-top: 1px solid var(--neutral-light);
   display: flex;
@@ -586,23 +586,66 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   color: var(--neutral-muted);
   font-size: 0.65rem;
-  font-weight: 500;
+  font-weight: 600;
   width: 25%;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
 .nav-item-btn.active {
   color: var(--primary);
+  font-weight: 700;
 }
 
 .nav-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 44px;
+  height: 26px;
+  border-radius: 16px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--neutral-muted);
+}
+
+.nav-item-btn.active .nav-icon {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+/* Prominent Write Button style */
+.nav-item-btn.nav-write-btn .nav-icon {
+  background-color: var(--primary);
+  color: var(--white);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.nav-item-btn.nav-write-btn.active .nav-icon {
+  background-color: var(--primary-hover);
+}
+
+.nav-item-btn.nav-write-btn:active .nav-icon {
+  transform: scale(0.92);
+}
+
+/* Eliminate browser mobile tap highlight flashing globally */
+* {
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none;
+}
+
+/* Standard native active feedback */
+button:active, .post-card:active, .calendar-day:active, .calendar-event-card:active, .filter-badge:active {
+  transform: scale(0.98);
+  opacity: 0.92;
 }
 
 /* Q&A points design */

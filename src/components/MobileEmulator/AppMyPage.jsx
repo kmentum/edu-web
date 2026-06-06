@@ -15,8 +15,18 @@ export const AppMyPage = ({ onNavigate }) => {
     <div className="mobile-app-layout animate-fade-in" style={{ backgroundColor: 'white', height: '100%' }}>
       {/* Header */}
       <div className="mobile-header">
-        <span className="mobile-logo-text">👤 마이페이지</span>
-        <button onClick={logout} style={{ fontSize: '0.75rem', color: 'var(--accent-red)', fontWeight: '600' }}>
+        <button 
+          onClick={() => onNavigate('feed')} 
+          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+          title="뒤로가기"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#64748b' }}>
+            <line x1="19" x2="5" y1="12" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+        </button>
+        <span className="mobile-logo-text" style={{ flex: 1, marginLeft: '12px' }}>마이페이지</span>
+        <button onClick={logout} style={{ fontSize: '0.75rem', color: 'var(--accent-red)', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer' }}>
           로그아웃
         </button>
       </div>

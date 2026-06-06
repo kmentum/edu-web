@@ -1,14 +1,30 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { AppStateContext } from '../../context/AppStateContext';
 import { maskPseudonym } from '../../utils/masking';
 
 export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
-  const { currentUser, posts, createPost } = useContext(AppStateContext);
+  const { 
+    currentUser, 
+    posts, 
+    createPost, 
+    activeTab, 
+    setActiveTab, 
+    showNotifDropdown, 
+    setShowNotifDropdown, 
+    notifications, 
+    markNotificationsAsRead 
+  } = useContext(AppStateContext);
 
-  // Tab State: 'school' (우리학교), 'region' (우리동네), 'all' (전체)
-  const [activeTab, setActiveTab] = useState('all');
   // Sub-category filter: '전체', '자유', '질문', '리뷰'
   const [activeCategory, setActiveCategory] = useState('전체');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (screenMode === 'add-post') {
+      setWritePostType(activeTab);
+    }
+  }, [screenMode, activeTab]);
 
   // Add post states (for write screen)
   const [writeTitle, setWriteTitle] = useState('');
@@ -36,6 +52,14 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
   const filteredPosts = posts.filter(post => {
     // 1. Ban status
     if (post.isBanned) return false;
+
+    // Search filter
+    if (searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase();
+      const matchTitle = post.title && post.title.toLowerCase().includes(query);
+      const matchContent = post.content && post.content.toLowerCase().includes(query);
+      if (!matchTitle && !matchContent) return false;
+    }
 
     // 2. Synced academic calendar posts should ONLY show in the 'school' tab
     if (post.id.startsWith('post-cal-')) {
@@ -147,6 +171,86 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
   // Rendering of Main Feed List Screen
   const renderFeedList = () => (
     <div className="mobile-app-layout animate-fade-in" style={{ height: '100%' }}>
+      {/* Header with Search, Notif, MyPage */}
+      <div className="mobile-header">
+        {isSearchExpanded ? (
+          <div className="search-bar-container" style={{ display: 'flex', width: '100%', alignItems: 'center', gap: '8px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--neutral-muted)' }}>
+              <circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" />
+            </svg>
+            <input 
+              type="text" 
+              placeholder="글 제목, 내용 검색..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                flex: 1,
+                border: 'none',
+                outline: 'none',
+                fontSize: '0.85rem',
+                color: 'var(--neutral-dark)',
+                padding: '4px 0'
+              }}
+              autoFocus
+            />
+            <button 
+              onClick={() => { setIsSearchExpanded(false); setSearchQuery(''); }}
+              style={{ background: 'none', border: 'none', fontSize: '1rem', color: 'var(--neutral-muted)', cursor: 'pointer', padding: '0 4px' }}
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <>
+            <span className="mobile-logo-text">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'middle', color: '#64748b' }}>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              커뮤니티
+            </span>
+            <div className="mobile-header-actions">
+              <button 
+                onClick={() => setIsSearchExpanded(true)}
+                className="header-icon-btn"
+                title="검색"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" x2="16.65" y1="21" y2="16.65" />
+                </svg>
+              </button>
+              <button 
+                onClick={() => {
+                  setShowNotifDropdown(!showNotifDropdown);
+                  markNotificationsAsRead();
+                }}
+                className="header-icon-btn"
+                style={{ position: 'relative' }}
+                title="푸시 알림 내역"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                </svg>
+                {notifications.filter(n => n.unread).length > 0 && (
+                  <span className="notif-badge-dot" />
+                )}
+              </button>
+              <button 
+                onClick={() => onNavigate('mypage')}
+                className="header-icon-btn"
+                title="마이페이지"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
       {/* Mobile Tabs */}
       <div className="mobile-tabs">
         <button 
@@ -246,9 +350,24 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
 
               <div className="post-card-footer">
                 <div className="post-stats">
-                  <div className="stat-item">👍 {post.likes}</div>
-                  <div className="stat-item">💬 {post.commentsCount}</div>
-                  <div className="stat-item">📁 {post.scraps}</div>
+                  <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#64748b' }}>
+                      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                    </svg>
+                    <span>{post.likes}</span>
+                  </div>
+                  <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#64748b' }}>
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <span>{post.commentsCount}</span>
+                  </div>
+                  <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#64748b' }}>
+                      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+                    </svg>
+                    <span>{post.scraps}</span>
+                  </div>
                 </div>
                 
                 <div style={{ display: 'flex', gap: '4px' }}>
@@ -261,18 +380,6 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
           ))
         )}
       </div>
-
-      {/* Floating Write Button */}
-      <button 
-        className="write-floating-btn"
-        onClick={() => {
-          setWritePostType(activeTab);
-          onNavigate('add-post');
-        }}
-        title="글쓰기"
-      >
-        ✏️
-      </button>
     </div>
   );
 

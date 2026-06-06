@@ -3,7 +3,15 @@ import { AppStateContext } from '../../context/AppStateContext';
 import { mockReceiptTemplates } from '../../data/receiptData';
 
 export const AppReceiptAuth = ({ onNavigate }) => {
-  const { receipts, currentUser, submitReceipt } = useContext(AppStateContext);
+  const { 
+    receipts, 
+    currentUser, 
+    submitReceipt,
+    showNotifDropdown,
+    setShowNotifDropdown,
+    notifications,
+    markNotificationsAsRead
+  } = useContext(AppStateContext);
 
   // States
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -15,11 +23,17 @@ export const AppReceiptAuth = ({ onNavigate }) => {
   const [scanStep, setScanStep] = useState(0); // 0: idle, 1: scanning, 2: scan complete
   
   const [ocrResults, setOcrResults] = useState(null);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   if (!currentUser) return null;
 
   // Filter user's own receipts
   const myReceipts = receipts.filter(r => r.userUid === currentUser.uid);
+
+  const filteredReceipts = searchQuery.trim() !== ''
+    ? myReceipts.filter(r => r.academyName.toLowerCase().includes(searchQuery.toLowerCase()))
+    : myReceipts;
 
   // Trigger Mock OCR animation
   const startMockOCR = (preset = null) => {
@@ -90,13 +104,92 @@ export const AppReceiptAuth = ({ onNavigate }) => {
 
   return (
     <div className="mobile-app-layout animate-fade-in" style={{ backgroundColor: 'white', height: '100%' }}>
-      {/* Header */}
+      {/* Header with Search, Notif, MyPage */}
       <div className="mobile-header">
-        <span className="mobile-logo-text">📜 학원 영수증 인증</span>
-        <span className="points-pill">💎 {currentUser.points}P</span>
+        {isSearchExpanded ? (
+          <div className="search-bar-container" style={{ display: 'flex', width: '100%', alignItems: 'center', gap: '8px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--neutral-muted)' }}>
+              <circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" />
+            </svg>
+            <input 
+              type="text" 
+              placeholder="학원명 검색..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                flex: 1,
+                border: 'none',
+                outline: 'none',
+                fontSize: '0.85rem',
+                color: 'var(--neutral-dark)',
+                padding: '4px 0'
+              }}
+              autoFocus
+            />
+            <button 
+              onClick={() => { setIsSearchExpanded(false); setSearchQuery(''); }}
+              style={{ background: 'none', border: 'none', fontSize: '1rem', color: 'var(--neutral-muted)', cursor: 'pointer', padding: '0 4px' }}
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <>
+            <span className="mobile-logo-text">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'middle', color: '#64748b' }}>
+                <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+              </svg>
+              영수증 인증
+            </span>
+            <div className="mobile-header-actions">
+              <button 
+                onClick={() => setIsSearchExpanded(true)}
+                className="header-icon-btn"
+                title="검색"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" x2="16.65" y1="21" y2="16.65" />
+                </svg>
+              </button>
+              <button 
+                onClick={() => {
+                  setShowNotifDropdown(!showNotifDropdown);
+                  markNotificationsAsRead();
+                }}
+                className="header-icon-btn"
+                style={{ position: 'relative' }}
+                title="푸시 알림 내역"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                </svg>
+                {notifications.filter(n => n.unread).length > 0 && (
+                  <span className="notif-badge-dot" />
+                )}
+              </button>
+              <button 
+                onClick={() => onNavigate('mypage')}
+                className="header-icon-btn"
+                title="마이페이지"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="mobile-content-area" style={{ paddingBottom: '30px' }}>
+        {/* Points display row */}
+        <div style={{ background: 'var(--neutral-light)', padding: '10px 14px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--neutral-text)' }}>내 보유 포인트</span>
+          <span className="points-pill" style={{ margin: 0 }}>💎 {currentUser.points}P</span>
+        </div>
         
         {scanStep === 0 && (
           <>
@@ -177,45 +270,53 @@ export const AppReceiptAuth = ({ onNavigate }) => {
 
             {/* MY RECEIPTS STATUS LIST */}
             <div style={{ marginTop: '20px' }}>
-              <span className="input-label">내 영수증 인증 내역 ({myReceipts.length})</span>
+              <span className="input-label">
+                {searchQuery.trim() !== '' ? `검색 결과 (${filteredReceipts.length})` : `내 영수증 인증 내역 (${myReceipts.length})`}
+              </span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                {myReceipts.map(rcpt => (
-                  <div 
-                    key={rcpt.id}
-                    style={{
-                      background: 'var(--white)',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--neutral-light)',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      fontSize: '0.75rem'
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: '700' }}>{rcpt.academyName}</div>
-                      <div style={{ color: 'var(--neutral-muted)', fontSize: '0.65rem' }}>
-                        {rcpt.amountStr} | {new Date(rcpt.createdAt).toLocaleDateString('ko-KR')}
-                      </div>
-                      {rcpt.reviewerMemo && (
-                        <div style={{ color: 'var(--neutral-muted)', fontSize: '0.6rem', marginTop: '4px', fontStyle: 'italic' }}>
-                          * 비고: {rcpt.reviewerMemo}
+                {filteredReceipts.length === 0 ? (
+                  <p style={{ fontSize: '0.75rem', color: 'var(--neutral-muted)', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
+                    인증 내역이 없습니다.
+                  </p>
+                ) : (
+                  filteredReceipts.map(rcpt => (
+                    <div 
+                      key={rcpt.id}
+                      style={{
+                        background: 'var(--white)',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--neutral-light)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontSize: '0.75rem'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: '700' }}>{rcpt.academyName}</div>
+                        <div style={{ color: 'var(--neutral-muted)', fontSize: '0.65rem' }}>
+                          {rcpt.amountStr} | {new Date(rcpt.createdAt).toLocaleDateString('ko-KR')}
                         </div>
-                      )}
-                    </div>
+                        {rcpt.reviewerMemo && (
+                          <div style={{ color: 'var(--neutral-muted)', fontSize: '0.6rem', marginTop: '4px', fontStyle: 'italic' }}>
+                            * 비고: {rcpt.reviewerMemo}
+                          </div>
+                        )}
+                      </div>
 
-                    <span className={`badge ${
-                      rcpt.status === 'approved' ? 'badge-green' : 
-                      rcpt.status === 'rejected' ? 'badge-red' : 
-                      'badge-gold'
-                    }`}>
-                      {rcpt.status === 'approved' ? '승인완료 (+5,000P)' : 
-                       rcpt.status === 'rejected' ? '반려됨' : 
-                       '검토중'}
-                    </span>
-                  </div>
-                ))}
+                      <span className={`badge ${
+                        rcpt.status === 'approved' ? 'badge-green' : 
+                        rcpt.status === 'rejected' ? 'badge-red' : 
+                        'badge-gold'
+                      }`}>
+                        {rcpt.status === 'approved' ? '승인완료 (+5,000P)' : 
+                         rcpt.status === 'rejected' ? '반려됨' : 
+                         '검토중'}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </>
@@ -259,7 +360,12 @@ export const AppReceiptAuth = ({ onNavigate }) => {
         {scanStep === 2 && ocrResults && (
           <div className="animate-slide-up" style={{ padding: '10px' }}>
             <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-              <span style={{ fontSize: '2rem' }}>🔍</span>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'var(--neutral-light)', color: 'var(--neutral-muted)', marginBottom: '8px' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" x2="16.65" y1="21" y2="16.65" />
+                </svg>
+              </div>
               <h4 style={{ fontSize: '0.95rem', fontWeight: '700', marginTop: '6px' }}>OCR 정보 추출 완료!</h4>
               <p style={{ fontSize: '0.7rem', color: 'var(--neutral-muted)' }}>
                 추출된 텍스트와 영수증 실물이 일치하는지 확인해주세요.

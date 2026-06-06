@@ -4,7 +4,7 @@ import { mockAcademicCalendars } from '../../data/schoolData';
 import { mockPdfs } from '../../data/mockPdfData';
 import AppPdfViewerModal from './AppPdfViewerModal';
 
-export const AppCalendar = () => {
+export const AppCalendar = ({ onNavigate }) => {
   const { 
     currentUser, 
     customCalendarEvents, 
@@ -13,11 +13,17 @@ export const AppCalendar = () => {
     subscribedEvents,
     addCalendarComment,
     toggleSubscribeEvent,
-    ensureSyncedPostExists
+    ensureSyncedPostExists,
+    showNotifDropdown,
+    setShowNotifDropdown,
+    notifications,
+    markNotificationsAsRead
   } = useContext(AppStateContext);
 
   const [selectedDay, setSelectedDay] = useState(30); // Default to current day 30 (May 30 or June 30)
   const [currentMonth, setCurrentMonth] = useState(6); // June 2026
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Custom event inputs
   const [newEventTitle, setNewEventTitle] = useState('');
@@ -52,6 +58,13 @@ export const AppCalendar = () => {
   
   // Merge all events
   const allEvents = [...baseSchoolEvents, ...userSchoolEvents];
+
+  const searchedEvents = searchQuery.trim() !== '' 
+    ? allEvents.filter(e => 
+        (e.title && e.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (e.memo && e.memo.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : [];
 
   // Helper to get events for a specific day in June 2026 (yyyy-MM-dd)
   const getEventsForDate = (dayNum) => {
@@ -117,10 +130,87 @@ export const AppCalendar = () => {
 
   return (
     <div className="mobile-app-layout animate-fade-in" style={{ backgroundColor: 'white', height: '100%', position: 'relative' }}>
-      {/* Header */}
+      {/* Header with Search, Notif, MyPage */}
       <div className="mobile-header">
-        <span className="mobile-logo-text">🏫 학사 캘린더</span>
-        <span className="badge badge-indigo">{currentUser.schoolName.substring(0,6)}...</span>
+        {isSearchExpanded ? (
+          <div className="search-bar-container" style={{ display: 'flex', width: '100%', alignItems: 'center', gap: '8px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--neutral-muted)' }}>
+              <circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" />
+            </svg>
+            <input 
+              type="text" 
+              placeholder="일정 검색..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                flex: 1,
+                border: 'none',
+                outline: 'none',
+                fontSize: '0.85rem',
+                color: 'var(--neutral-dark)',
+                padding: '4px 0'
+              }}
+              autoFocus
+            />
+            <button 
+              onClick={() => { setIsSearchExpanded(false); setSearchQuery(''); }}
+              style={{ background: 'none', border: 'none', fontSize: '1rem', color: 'var(--neutral-muted)', cursor: 'pointer', padding: '0 4px' }}
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <>
+            <span className="mobile-logo-text">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'middle', color: '#64748b' }}>
+                <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                <line x1="16" x2="16" y1="2" y2="6" />
+                <line x1="8" x2="8" y1="2" y2="6" />
+                <line x1="3" x2="21" y1="10" y2="10" />
+              </svg>
+              학사일정
+            </span>
+            <div className="mobile-header-actions">
+              <button 
+                onClick={() => setIsSearchExpanded(true)}
+                className="header-icon-btn"
+                title="검색"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" x2="16.65" y1="21" y2="16.65" />
+                </svg>
+              </button>
+              <button 
+                onClick={() => {
+                  setShowNotifDropdown(!showNotifDropdown);
+                  markNotificationsAsRead();
+                }}
+                className="header-icon-btn"
+                style={{ position: 'relative' }}
+                title="푸시 알림 내역"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                </svg>
+                {notifications.filter(n => n.unread).length > 0 && (
+                  <span className="notif-badge-dot" />
+                )}
+              </button>
+              <button 
+                onClick={() => onNavigate('mypage')}
+                className="header-icon-btn"
+                title="마이페이지"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="mobile-content-area" style={{ paddingBottom: '30px' }}>
@@ -186,17 +276,21 @@ export const AppCalendar = () => {
         {/* Selected Day Schedule Details */}
         <div style={{ marginTop: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span className="input-label">6월 {selectedDay}일 일정 ({selectedDateEvents.length})</span>
-            <button 
-              onClick={() => setShowAddForm(!showAddForm)}
-              style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: '700' }}
-            >
-              {showAddForm ? '닫기' : '+ 일정 추가'}
-            </button>
+            <span className="input-label">
+              {searchQuery.trim() !== '' ? `검색 결과 (${searchedEvents.length})` : `6월 ${selectedDay}일 일정 (${selectedDateEvents.length})`}
+            </span>
+            {searchQuery.trim() === '' && (
+              <button 
+                onClick={() => setShowAddForm(!showAddForm)}
+                style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: '700' }}
+              >
+                {showAddForm ? '닫기' : '+ 일정 추가'}
+              </button>
+            )}
           </div>
 
           {/* Add custom event form */}
-          {showAddForm && (
+          {showAddForm && searchQuery.trim() === '' && (
             <form onSubmit={handleAddEvent} className="auth-custom-form animate-slide-up" style={{ background: 'var(--neutral-light)', padding: '12px', borderRadius: '8px', marginBottom: '12px', gap: '8px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px' }}>
                 <input 
@@ -234,7 +328,48 @@ export const AppCalendar = () => {
 
           {/* Render Schedule list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {selectedDateEvents.length === 0 ? (
+            {searchQuery.trim() !== '' ? (
+              searchedEvents.length === 0 ? (
+                <p style={{ fontSize: '0.75rem', color: 'var(--neutral-muted)', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
+                  검색 결과 일치하는 일정이 없습니다.
+                </p>
+              ) : (
+                searchedEvents.map(event => (
+                  <div 
+                    key={event.id}
+                    onClick={() => {
+                      setActiveEvent(event);
+                      setGradeFilter('전체');
+                      ensureSyncedPostExists(currentUser.schoolName, event.id, event.title);
+                    }}
+                    className={`calendar-event-card ${event.type === 'exam' ? 'exam' : event.type === 'holiday' ? 'holiday' : ''}`}
+                    style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+                    title="일정 상세 및 댓글창 열기"
+                  >
+                    <div style={{ fontWeight: '700', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#64748b' }}>
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                        {event.title}
+                      </span>
+                      <span className="badge" style={{ fontSize: '0.55rem', padding: '1px 4px' }}>
+                        {event.type === 'exam' ? '시험/평가' : event.type === 'holiday' ? '휴업/방학' : '학교행사'}
+                      </span>
+                    </div>
+                    {event.memo && (
+                      <div style={{ color: 'var(--neutral-text)', fontSize: '0.65rem', marginTop: '3px' }}>
+                        {event.memo}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', fontSize: '0.62rem', color: 'var(--primary)', fontWeight: '600' }}>
+                      <span>👉 실시간 대화창 입장 ({calendarComments.filter(c => c.eventId === event.id && !c.isBanned).length})</span>
+                      {subscribedEvents.includes(event.id) && <span style={{ color: 'var(--secondary)' }}>🔔 알림구독 중</span>}
+                    </div>
+                  </div>
+                ))
+              )
+            ) : selectedDateEvents.length === 0 ? (
               <p style={{ fontSize: '0.75rem', color: 'var(--neutral-muted)', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
                 등록된 학사 일정이 없습니다.
               </p>
@@ -248,12 +383,15 @@ export const AppCalendar = () => {
                     ensureSyncedPostExists(currentUser.schoolName, event.id, event.title);
                   }}
                   className={`calendar-event-card ${event.type === 'exam' ? 'exam' : event.type === 'holiday' ? 'holiday' : ''}`}
-                  style={{ cursor: 'pointer', transition: 'all 0.2s ease', hover: { transform: 'translateX(2px)' } }}
+                  style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
                   title="일정 상세 및 댓글창 열기"
                 >
                   <div style={{ fontWeight: '700', fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      💬 {event.title}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#64748b' }}>
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
+                      {event.title}
                     </span>
                     <span className="badge" style={{ fontSize: '0.55rem', padding: '1px 4px' }}>
                       {event.type === 'exam' ? '시험/평가' : event.type === 'holiday' ? '휴업/방학' : '학교행사'}
