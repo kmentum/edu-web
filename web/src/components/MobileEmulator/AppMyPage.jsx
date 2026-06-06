@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { AppStateContext } from '../../context/AppStateContext';
 import { mockPdfs } from '../../data/mockPdfData';
 import AppPdfViewerModal from './AppPdfViewerModal';
+// mockPdfs & AppPdfViewerModal used in purchases drawer
 
 export const AppMyPage = ({ onNavigate, onSelectPost }) => {
   const { 
@@ -16,7 +17,7 @@ export const AppMyPage = ({ onNavigate, onSelectPost }) => {
     updateUserPassword
   } = useContext(AppStateContext);
 
-  const [selectedPdf, setSelectedPdf] = useState(null);
+  const [selectedPdf, setSelectedPdf] = useState(null); // used in purchases drawer
   const [isEditingNick, setIsEditingNick] = useState(false);
   const [newNick, setNewNick] = useState(currentUser ? currentUser.pseudonym : '');
   
@@ -31,8 +32,6 @@ export const AppMyPage = ({ onNavigate, onSelectPost }) => {
   const [expandedNotice, setExpandedNotice] = useState(null);
 
   if (!currentUser) return null;
-
-  const pdfCatalog = mockPdfs;
 
   // --- Sub Render: My Posts List ---
   const renderMyPosts = () => {
@@ -74,6 +73,74 @@ export const AppMyPage = ({ onNavigate, onSelectPost }) => {
             </h5>
           </div>
         ))}
+      </div>
+    );
+  };
+
+  // --- Sub Render: My Purchased PDFs ---
+  const renderMyPurchases = () => {
+    const purchasedIds = currentUser.purchasedPdfs || [];
+    const purchasedList = mockPdfs.filter(p => purchasedIds.includes(p.id));
+
+    if (purchasedList.length === 0) {
+      return (
+        <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--neutral-muted)', fontSize: '0.72rem', fontStyle: 'italic' }}>
+          구매한 자료가 없습니다.<br/>마켓에서 내신 족보 & 노하우 자료를 구매해 보세요!
+          <button
+            onClick={() => { setActiveDrawer(null); onNavigate('pdf-market'); }}
+            className="action-btn action-btn-primary"
+            style={{ display: 'block', margin: '12px auto 0', fontSize: '0.72rem', padding: '8px 20px' }}
+          >
+            📚 마켓 바로가기
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {purchasedList.map(pdf => (
+          <div
+            key={pdf.id}
+            onClick={() => setSelectedPdf(pdf)}
+            style={{
+              background: 'linear-gradient(135deg, #ecfdf5, #f0fdf4)',
+              border: '1.5px solid #6ee7b7',
+              borderRadius: '12px',
+              padding: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.58rem', background: '#d1fae5', color: '#065f46', fontWeight: '700', padding: '2px 6px', borderRadius: '4px' }}>
+                📖 소장 완료
+              </span>
+              <span style={{ fontSize: '0.6rem', color: 'var(--neutral-muted)' }}>⭐ {pdf.rating.toFixed(1)}</span>
+            </div>
+            <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--neutral-dark)', lineHeight: '1.3' }}>
+              {pdf.title}
+            </div>
+            <div style={{ fontSize: '0.6rem', color: 'var(--neutral-muted)' }}>
+              {pdf.schoolName} · {pdf.pages}페이지
+            </div>
+            <div style={{ fontSize: '0.65rem', color: '#059669', fontWeight: '600', marginTop: '2px' }}>
+              탭하여 열람하기 →
+            </div>
+          </div>
+        ))}
+        <button
+          onClick={() => { setActiveDrawer(null); onNavigate('pdf-market'); }}
+          style={{
+            marginTop: '4px', padding: '8px', fontSize: '0.7rem', fontWeight: '700',
+            background: 'none', border: '1.5px dashed #a7f3d0', borderRadius: '10px',
+            color: '#059669', cursor: 'pointer', textAlign: 'center',
+          }}
+        >
+          + 더 많은 자료 구경하기 → 마켓
+        </button>
       </div>
     );
   };
@@ -423,6 +490,18 @@ export const AppMyPage = ({ onNavigate, onSelectPost }) => {
             <span style={{ fontSize: '0.75rem', color: 'var(--neutral-muted)' }}>➡️</span>
           </div>
 
+          <div className="mypage-menu-item" onClick={() => setActiveDrawer('purchases')}>
+            <span>📚 내 구매 자료 내역</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {(currentUser.purchasedPdfs || []).length > 0 && (
+                <span style={{ fontSize: '0.62rem', background: 'var(--secondary)', color: 'white', borderRadius: '10px', padding: '1px 6px', fontWeight: '700' }}>
+                  {(currentUser.purchasedPdfs || []).length}
+                </span>
+              )}
+              <span style={{ fontSize: '0.75rem', color: 'var(--neutral-muted)' }}>➡️</span>
+            </span>
+          </div>
+
           <div className="mypage-menu-item" onClick={() => setActiveDrawer('invite')}>
             <span>✉️ 다른 학부모 초대하기</span>
             <span style={{ fontSize: '0.75rem', color: 'var(--neutral-muted)' }}>➡️</span>
@@ -439,62 +518,13 @@ export const AppMyPage = ({ onNavigate, onSelectPost }) => {
           </div>
         </div>
 
-        {/* POINT SHOP (Utility - PDF Market) */}
-        <div style={{ marginTop: '24px' }}>
-          <div style={{ borderBottom: '2px solid var(--neutral-light)', paddingBottom: '6px', marginBottom: '10px' }}>
-            <span className="input-label" style={{ fontSize: '0.8rem', color: 'var(--neutral-dark)' }}>📚 선배 맘 노하우 PDF 마켓 (포인트 샵)</span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {pdfCatalog.map(pdf => {
-              const isPurchased = (currentUser.purchasedPdfs || []).includes(pdf.id);
-              
-              return (
-                <div 
-                  key={pdf.id}
-                  className="mypage-section-card"
-                  style={{
-                    background: 'var(--white)',
-                    border: '1px solid var(--neutral-light)',
-                    borderRadius: '10px',
-                    padding: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <h5 style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--neutral-dark)', flex: '1', paddingRight: '8px', lineHeight: '1.3' }}>
-                      {pdf.title}
-                    </h5>
-                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent-gold)' }}>
-                      {pdf.pricePoints.toLocaleString()}P
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '0.68rem', color: 'var(--neutral-muted)' }}>
-                    {pdf.schoolName} • 작성 학부모: {pdf.authorName.split(' ').slice(-1)[0]}
-                  </p>
-                  
-                  <button 
-                    onClick={() => setSelectedPdf(pdf)}
-                    className={`action-btn ${isPurchased ? 'action-btn-success' : 'action-btn-primary'}`}
-                    style={{ alignSelf: 'flex-end', fontSize: '0.65rem', marginTop: '6px', padding: '4px 10px', borderRadius: '8px' }}
-                  >
-                    {isPurchased ? '📖 열람 및 다운로드' : '자료 보기 및 구매'}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
       </div>
 
-      {/* PDF Viewer Modal */}
+      {/* PDF Viewer Modal (used from purchases drawer) */}
       {selectedPdf && (
-        <AppPdfViewerModal 
-          pdf={selectedPdf} 
-          onClose={() => setSelectedPdf(null)} 
+        <AppPdfViewerModal
+          pdf={selectedPdf}
+          onClose={() => setSelectedPdf(null)}
         />
       )}
 
@@ -505,6 +535,7 @@ export const AppMyPage = ({ onNavigate, onSelectPost }) => {
             <div className="mypage-drawer-header">
               <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--neutral-dark)' }}>
                 {activeDrawer === 'posts' && '📝 내가 작성한 글 목록'}
+                {activeDrawer === 'purchases' && '📚 내 구매 자료 내역'}
                 {activeDrawer === 'invite' && '✉️ 학부모 초대하기'}
                 {activeDrawer === 'announcements' && '📢 서비스 공지사항'}
                 {activeDrawer === 'settings' && '⚙️ 서비스 환경 설정'}
@@ -519,6 +550,7 @@ export const AppMyPage = ({ onNavigate, onSelectPost }) => {
             
             <div style={{ overflowY: 'auto', maxHeight: '350px', paddingBottom: '10px' }}>
               {activeDrawer === 'posts' && renderMyPosts()}
+              {activeDrawer === 'purchases' && renderMyPurchases()}
               {activeDrawer === 'invite' && renderInviteLink()}
               {activeDrawer === 'announcements' && renderAnnouncements()}
               {activeDrawer === 'settings' && renderSettings()}
