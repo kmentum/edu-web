@@ -24,10 +24,11 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
   const [showHeader, setShowHeader] = useState(true);
   const lastScrollTopRef = useRef(0);
 
-  // --- Pull-to-Refresh Gesture States (ref 기반으로 클로저 이슈 제거) ---
+  // --- Pull-to-Refresh & Swipe Tabs Gesture States (ref 기반) ---
   const [pullDisplayDist, setPullDisplayDist] = useState(0); // 렌더링용
   const [isRefreshing, setIsRefreshing] = useState(false);
   const touchStartYRef = useRef(0);
+  const touchStartXRef = useRef(0);
   const isPullingRef = useRef(false);
   const pullDistRef = useRef(0);
   const isRefreshingRef = useRef(false);
@@ -36,27 +37,71 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
   const handleTouchStart = (e) => {
     if (isRefreshingRef.current) return;
     const scrollTop = e.currentTarget.scrollTop;
+    
+    touchStartYRef.current = e.touches[0].clientY;
+    touchStartXRef.current = e.touches[0].clientX;
+    pullDistRef.current = 0;
+
     if (scrollTop <= 0) {
       isPullingRef.current = true;
-      touchStartYRef.current = e.touches[0].clientY;
     } else {
       isPullingRef.current = false;
     }
   };
 
   const handleTouchMove = (e) => {
-    if (!isPullingRef.current || isRefreshingRef.current) return;
-    const diffY = e.touches[0].clientY - touchStartYRef.current;
-    if (diffY > 0) {
-      // 고무줄 감쇄 곡선
-      const dist = Math.min(Math.pow(diffY, 0.75) * 2.5, 80);
-      pullDistRef.current = dist;
-      setPullDisplayDist(dist);
-      if (diffY > 8 && e.cancelable) e.preventDefault();
+    if (isRefreshingRef.current) return;
+    
+    const currentY = e.touches[0].clientY;
+    const currentX = e.touches[0].clientX;
+    const diffY = currentY - touchStartYRef.current;
+    const diffX = currentX - touchStartXRef.current;
+
+    // Y축 드래그가 지배적이고 아래로 당길 때만 pull-to-refresh로 판단
+    if (Math.abs(diffY) > Math.abs(diffX)) {
+      if (isPullingRef.current && diffY > 0) {
+        const dist = Math.min(Math.pow(diffY, 0.75) * 2.5, 80);
+        pullDistRef.current = dist;
+        setPullDisplayDist(dist);
+        if (diffY > 8 && e.cancelable) e.preventDefault();
+      }
     }
   };
 
-  const handleTouchEnd = async () => {
+  const handleTouchEnd = async (e) => {
+    const currentY = e.changedTouches[0].clientY;
+    const currentX = e.changedTouches[0].clientX;
+    const diffY = currentY - touchStartYRef.current;
+    const diffX = currentX - touchStartXRef.current;
+    
+    const absX = Math.abs(diffX);
+    const absY = Math.abs(diffY);
+
+    // 1. 좌우 스와이프 제스처 처리 (X축 지배적이고 70px 이상 이동한 경우)
+    if (absX > absY && absX > 70) {
+      const tabs = ['school', 'region', 'all'];
+      const currentIndex = tabs.indexOf(activeTab);
+
+      if (diffX > 0) {
+        // 오른쪽 스와이프 -> 이전 탭(왼쪽 채널)으로
+        if (currentIndex > 0) {
+          setActiveTab(tabs[currentIndex - 1]);
+        }
+      } else {
+        // 왼쪽 스와이프 -> 다음 탭(오른쪽 채널)으로
+        if (currentIndex < tabs.length - 1) {
+          setActiveTab(tabs[currentIndex + 1]);
+        }
+      }
+
+      // 제스처가 탭 전환으로 소비되었으므로 pull-to-refresh 초기화 후 반환
+      isPullingRef.current = false;
+      pullDistRef.current = 0;
+      setPullDisplayDist(0);
+      return;
+    }
+
+    // 2. 세로 당겨서 새로고침(Pull-to-Refresh) 처리
     if (!isPullingRef.current) return;
     isPullingRef.current = false;
     const dist = pullDistRef.current;
