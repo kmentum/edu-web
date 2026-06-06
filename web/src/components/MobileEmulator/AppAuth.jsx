@@ -10,6 +10,28 @@ export const AppAuth = ({ onNavigate }) => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailSuggestions, setEmailSuggestions] = useState([]);
+
+  const emailDomains = ['gmail.com', 'naver.com', 'daum.net', 'hanmail.net', 'nate.com'];
+
+  const handleEmailChange = (val) => {
+    setEmail(val);
+    if (!val.trim()) {
+      setEmailSuggestions([]);
+      return;
+    }
+    const parts = val.split('@');
+    if (parts.length === 1 || (parts.length === 2 && !parts[1])) {
+      const username = parts[0];
+      if (username) {
+        setEmailSuggestions(emailDomains.map(domain => `${username}@${domain}`));
+      } else {
+        setEmailSuggestions([]);
+      }
+    } else {
+      setEmailSuggestions([]);
+    }
+  };
 
   const isNativeApp = typeof window !== 'undefined' && !!window.Capacitor;
 
@@ -128,7 +150,7 @@ export const AppAuth = ({ onNavigate }) => {
             className="text-input"
             placeholder="이메일 주소"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => handleEmailChange(e.target.value)}
             disabled={loading}
             style={{
               padding: '12px 14px',
@@ -139,6 +161,46 @@ export const AppAuth = ({ onNavigate }) => {
               transition: 'border-color 0.2s ease'
             }}
           />
+
+          {/* Email suggestions chip list */}
+          {emailSuggestions.length > 0 && (
+            <div 
+              className="no-scrollbar"
+              style={{
+                display: 'flex',
+                gap: '6px',
+                overflowX: 'auto',
+                padding: '4px 0 6px',
+                whiteSpace: 'nowrap',
+                marginTop: '-4px'
+              }}
+            >
+              {emailSuggestions.map((suggestion) => (
+                <button
+                  type="button"
+                  key={suggestion}
+                  onClick={() => {
+                    setEmail(suggestion);
+                    setEmailSuggestions([]);
+                  }}
+                  className="filter-badge"
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '0.72rem',
+                    margin: 0,
+                    backgroundColor: '#f1f5f9',
+                    border: '1px solid #e2e8f0',
+                    color: 'var(--primary)',
+                    borderRadius: '20px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
 
           {isSignUp && (
             <input
@@ -205,6 +267,8 @@ export const AppAuth = ({ onNavigate }) => {
               setIsSignUp(!isSignUp);
               setName('');
               setPassword('');
+              setEmail('');
+              setEmailSuggestions([]);
             }}
             style={{
               background: 'none',
