@@ -276,6 +276,9 @@ export const AppStateProvider = ({ children }) => {
         } else if (JSON.stringify(freshUser) !== JSON.stringify(currentUser)) {
           setCurrentUser(freshUser);
         }
+      } else {
+        // [버그 핫픽스] users 목록에 존재하지 않는 유저(영구 삭제된 유저)인 경우 강제 세션 해제 및 로그아웃
+        setCurrentUser(null);
       }
     }
   }, [users, currentUser]);
