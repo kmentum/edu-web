@@ -135,7 +135,9 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
           </svg>
           목록
         </button>
-        <span style={{ fontWeight: '700', fontSize: '0.9rem' }}>게시글 상세</span>
+        <span style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--neutral-dark)' }}>
+          {post.type === 'school' ? '우리 학교' : post.type === 'region' ? '우리 동네' : '전체 광장'}
+        </span>
         <div style={{ position: 'relative' }}>
           <button 
             onClick={() => setShowDropdown(!showDropdown)}
@@ -360,13 +362,12 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
               {post.qnaPoints > 0 && <span className="qna-point-badge" style={{ marginLeft: '6px' }}>💎 {post.qnaPoints}P 채택</span>}
             </h2>
 
-            {/* Scope tags */}
-            <div style={{ display: 'flex', gap: '4px', marginBottom: '12px' }}>
-              {post.type === 'school' && <span className="badge badge-indigo">우리학교 단독</span>}
-              {post.type === 'region' && <span className="badge badge-teal">우리동네 단독</span>}
-              {post.type === 'all' && <span className="badge badge-indigo">전국 광장</span>}
-              {post.hasReceiptBadge && <span className="badge badge-green">📜 학원 영수증 인증완료</span>}
-            </div>
+            {/* Scope tags (채널 뱃지는 상단 헤더로 이동, 영수증 뱃지만 남김) */}
+            {post.hasReceiptBadge && (
+              <div style={{ display: 'flex', gap: '4px', marginBottom: '12px' }}>
+                <span className="badge badge-green">📜 학원 영수증 인증완료</span>
+              </div>
+            )}
 
             {/* Content Body / Flag check */}
             <div className="post-detail-body">
