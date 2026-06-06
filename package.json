@@ -2,6 +2,6 @@
   "name": "edu-root",
   "private": true,
   "scripts": {
-    "build": "npm install --prefix web && npm run build --prefix web"
+    "build": "npm install --prefix web && npx --prefix web vite build"
   }
 }
