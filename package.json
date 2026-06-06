@@ -8,7 +8,7 @@
     "build": "vite build && npx cap copy",
     "lint": "eslint .",
     "preview": "vite preview",
-    "predeploy": "vite build --base=/edu-web/ && npx cap copy",
+    "predeploy": "vite build --base=/edu-web/",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
