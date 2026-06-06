@@ -1170,6 +1170,8 @@ export const AppStateProvider = ({ children }) => {
     setComments(prev => prev.map(c => c.id === commentId ? { ...c, isBanned: true } : c));
   };
 
+  const deleteComment = deleteCalendarComment;
+
   const restoreCalendarComment = async (commentId) => {
     if (isSupabaseConfigured) {
       try {
@@ -1310,6 +1312,7 @@ export const AppStateProvider = ({ children }) => {
       addCalendarComment,
       deleteCalendarComment,
       restoreCalendarComment,
+      deleteComment,
       toggleSubscribeEvent,
       clearNotifications,
       markNotificationsAsRead,

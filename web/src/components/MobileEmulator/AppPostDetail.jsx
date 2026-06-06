@@ -11,7 +11,9 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
     toggleScrapPost, 
     reportPost,
     acceptComment,
-    votePoll
+    votePoll,
+    deletePost,
+    deleteComment
   } = useContext(AppStateContext);
 
   const [commentInput, setCommentInput] = useState('');
@@ -30,8 +32,8 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
     );
   }
 
-  // Filter comments for this post
-  const postComments = comments.filter(c => c.postId === postId);
+  // Filter comments for this post, excluding banned/deleted ones
+  const postComments = comments.filter(c => c.postId === postId && !c.isBanned);
 
   // Checks if the user is the author of this post
   const isPostAuthor = post.authorUid === currentUser.uid;
@@ -46,6 +48,21 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
   const handleReport = () => {
     if (window.confirm('정말로 이 게시글을 신고하시겠습니까?')) {
       reportPost(postId, '부적절한 게시글');
+    }
+  };
+
+  const handleDeletePost = () => {
+    if (window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+      deletePost(postId);
+      alert('게시글이 삭제되었습니다.');
+      onNavigate('feed');
+    }
+  };
+
+  const handleDeleteComment = (commentId) => {
+    if (window.confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
+      deleteComment(commentId);
+      alert('댓글이 삭제되었습니다.');
     }
   };
 
@@ -84,23 +101,43 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
           목록
         </button>
         <span style={{ fontWeight: '700', fontSize: '0.9rem' }}>게시글 상세</span>
-        <button 
-          onClick={handleReport} 
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '4px', 
-            fontSize: '0.8rem', 
-            color: 'var(--accent-red)', 
-            fontWeight: '600' 
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
-            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
-            <line x1="4" y1="22" x2="4" y2="15"></line>
-          </svg>
-          신고
-        </button>
+        {isPostAuthor ? (
+          <button 
+            onClick={handleDeletePost} 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '4px', 
+              fontSize: '0.8rem', 
+              color: 'var(--accent-red)', 
+              fontWeight: '600' 
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            삭제
+          </button>
+        ) : (
+          <button 
+            onClick={handleReport} 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '4px', 
+              fontSize: '0.8rem', 
+              color: 'var(--accent-red)', 
+              fontWeight: '600' 
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+              <line x1="4" y1="22" x2="4" y2="15"></line>
+            </svg>
+            신고
+          </button>
+        )}
       </div>
 
       <div className="post-detail-screen">
@@ -253,6 +290,24 @@ export const AppPostDetail = ({ postId, onNavigate }) => {
                     <span className="post-date" style={{ fontSize: '0.65rem' }}>
                       {new Date(comment.createdAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
+                    
+                    {/* Delete option for Comment Author */}
+                    {comment.authorUid === currentUser.uid && (
+                      <button 
+                        onClick={() => handleDeleteComment(comment.id)}
+                        style={{ 
+                          background: 'none', 
+                          border: 'none', 
+                          fontSize: '0.65rem', 
+                          color: 'var(--accent-red)', 
+                          fontWeight: '600',
+                          padding: '2px 4px',
+                          cursor: 'pointer' 
+                        }}
+                      >
+                        삭제
+                      </button>
+                    )}
                     
                     {/* Accept Answer Option for Q&A Author */}
                     {post.category === '질문' && !post.qnaResolved && isPostAuthor && comment.authorUid !== currentUser.uid && (

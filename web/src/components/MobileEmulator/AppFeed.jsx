@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { AppStateContext } from '../../context/AppStateContext';
 import { maskPseudonym } from '../../utils/masking';
 
@@ -19,6 +19,23 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
   const [activeCategory, setActiveCategory] = useState('전체');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showHeader, setShowHeader] = useState(true);
+  const lastScrollTopRef = useRef(0);
+
+  const handleScroll = (e) => {
+    const scrollTop = e.currentTarget.scrollTop;
+    const lastScrollTop = lastScrollTopRef.current;
+    
+    if (scrollTop <= 10) {
+      setShowHeader(true);
+    } else if (scrollTop > lastScrollTop && scrollTop > 50) {
+      setShowHeader(false);
+    } else if (scrollTop < lastScrollTop) {
+      setShowHeader(true);
+    }
+    
+    lastScrollTopRef.current = scrollTop;
+  };
 
   useEffect(() => {
     if (screenMode === 'add-post') {
@@ -171,8 +188,9 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
   // Rendering of Main Feed List Screen
   const renderFeedList = () => (
     <div className="mobile-app-layout animate-fade-in" style={{ height: '100%' }}>
-      {/* Header with Search, Notif, MyPage */}
-      <div className="mobile-header">
+      <div className={`feed-header-group ${showHeader ? 'show' : 'hide'}`}>
+        {/* Header with Search, Notif, MyPage */}
+        <div className="mobile-header">
         {isSearchExpanded ? (
           <div className="search-bar-container" style={{ display: 'flex', width: '100%', alignItems: 'center', gap: '8px' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--neutral-muted)' }}>
@@ -272,9 +290,10 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
           전체 광장
         </button>
       </div>
+      </div>
 
       {/* Filter Category & Scroll View */}
-      <div className="mobile-content-area">
+      <div className="mobile-content-area" onScroll={handleScroll}>
         {/* Category Badges */}
         <div className="feed-filter-bar">
           {['전체', '자유', '질문', '리뷰'].map(cat => (
@@ -288,12 +307,7 @@ export const AppFeed = ({ onNavigate, onSelectPost, screenMode }) => {
           ))}
         </div>
 
-        {/* Sub-header text describing boundaries */}
-        <div style={{ fontSize: '0.7rem', color: 'var(--neutral-muted)', padding: '0 4px', marginBottom: '2px' }}>
-          {activeTab === 'school' && `🏫 ${currentUser.schoolName} 학부모 전용 공간`}
-          {activeTab === 'region' && `📍 ${currentUser.region} 주민 소통 공간`}
-          {activeTab === 'all' && `🌐 전국 학부모 공유 광장`}
-        </div>
+
 
         {/* Scope expansion notice banner (UTIL-03.1) */}
         {isScopeExpanded && (

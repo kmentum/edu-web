@@ -17,7 +17,8 @@ export const AppCalendar = ({ onNavigate }) => {
     showNotifDropdown,
     setShowNotifDropdown,
     notifications,
-    markNotificationsAsRead
+    markNotificationsAsRead,
+    deleteComment
   } = useContext(AppStateContext);
 
   const [selectedDay, setSelectedDay] = useState(30); // Default to current day 30 (May 30 or June 30)
@@ -340,7 +341,6 @@ export const AppCalendar = ({ onNavigate }) => {
                     onClick={() => {
                       setActiveEvent(event);
                       setGradeFilter('전체');
-                      ensureSyncedPostExists(currentUser.schoolName, event.id, event.title);
                     }}
                     className={`calendar-event-card ${event.type === 'exam' ? 'exam' : event.type === 'holiday' ? 'holiday' : ''}`}
                     style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
@@ -380,7 +380,6 @@ export const AppCalendar = ({ onNavigate }) => {
                   onClick={() => {
                     setActiveEvent(event);
                     setGradeFilter('전체');
-                    ensureSyncedPostExists(currentUser.schoolName, event.id, event.title);
                   }}
                   className={`calendar-event-card ${event.type === 'exam' ? 'exam' : event.type === 'holiday' ? 'holiday' : ''}`}
                   style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
@@ -470,7 +469,7 @@ export const AppCalendar = ({ onNavigate }) => {
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 {/* Subscribe Toggle Button */}
                 <button 
-                  onClick={() => toggleSubscribeEvent(activeEvent.id)}
+                  onClick={() => toggleSubscribeEvent(currentUser.schoolName, activeEvent.id, activeEvent.title)}
                   className={`badge ${isSubscribed ? 'badge-green' : 'badge-indigo'}`}
                   style={{ border: '1px solid currentColor', fontSize: '0.65rem', padding: '4px 8px', cursor: 'pointer' }}
                 >
@@ -612,9 +611,32 @@ export const AppCalendar = ({ onNavigate }) => {
                           자녀: {comment.grade}
                         </span>
                       </div>
-                      <span style={{ color: 'var(--neutral-muted)', fontSize: '0.65rem' }}>
-                        {new Date(comment.createdAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ color: 'var(--neutral-muted)', fontSize: '0.65rem' }}>
+                          {new Date(comment.createdAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        {comment.authorUid === currentUser.uid && (
+                          <button 
+                            onClick={() => {
+                              if (window.confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
+                                deleteComment(comment.id);
+                                alert('댓글이 삭제되었습니다.');
+                              }
+                            }}
+                            style={{ 
+                              background: 'none', 
+                              border: 'none', 
+                              fontSize: '0.65rem', 
+                              color: 'var(--accent-red)', 
+                              fontWeight: '600',
+                              padding: 0,
+                              cursor: 'pointer' 
+                            }}
+                          >
+                            삭제
+                          </button>
+                        )}
+                      </div>
                     </div>
                     
                     <p style={{ fontSize: '0.78rem', color: 'var(--neutral-text)', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
