@@ -1,0 +1,11 @@
+{
+  "appId": "com.kmentum.barnet",
+  "appName": "Barnet",
+  "webDir": "dist",
+  "android": {
+    "path": "../android"
+  },
+  "ios": {
+    "path": "../ios"
+  }
+}
