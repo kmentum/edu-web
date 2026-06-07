@@ -90,9 +90,12 @@ export const AppAuth = ({ onNavigate }) => {
       
       {/* Mini Brand Logo */}
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-        <div style={{ fontSize: '3rem', marginBottom: '8px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.05))' }}>🎒</div>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 8px', color: 'var(--neutral-dark)', display: 'block' }}>
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+          <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
+        </svg>
         <h2 style={{ fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.8px', color: 'var(--neutral-dark)', margin: 0 }}>
-          반넷 (Barnet)
+          학클 (Hakle)
         </h2>
         <p style={{ color: 'var(--neutral-muted)', fontSize: '0.78rem', marginTop: '4px', fontWeight: '500' }}>
           인증된 학부모들만의 고품격 가명 소통 광장
@@ -255,7 +258,7 @@ export const AppAuth = ({ onNavigate }) => {
               marginTop: '6px'
             }}
           >
-            {loading ? '처리 중...' : isSignUp ? '반넷 가입하기' : '로그인'}
+            {loading ? '처리 중...' : isSignUp ? '학클 가입하기' : '로그인'}
           </button>
         </form>
 
@@ -289,7 +292,7 @@ export const AppAuth = ({ onNavigate }) => {
       {/* Footer copyright */}
       <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center' }}>
         <p style={{ color: 'var(--neutral-muted)', fontSize: '0.62rem', margin: 0 }}>
-          © 2026 Barnet. All rights reserved.
+          © 2026 Hakle. All rights reserved.
         </p>
       </div>
 

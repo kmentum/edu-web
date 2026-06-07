@@ -1,6 +1,6 @@
 {
-  "appId": "com.kmentum.barnet",
-  "appName": "Barnet",
+  "appId": "com.kmentum.hakle",
+  "appName": "학클",
   "webDir": "dist",
   "android": {
     "path": "../android"

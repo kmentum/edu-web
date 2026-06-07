@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/학부모_익명_커뮤니티_앱_기능명세서_v2.md",
-                "mode": "preview",
+                "file": "아이디어.md",
+                "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "학부모_익명_커뮤니티_앱_기능명세서_v2"
+              "title": "아이디어"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/학부모_익명_커뮤니티_앱_기능명세서_v2.md",
+                "file": "아이디어.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "학부모_익명_커뮤니티_앱_기능명세서_v2 의 백링크"
+              "title": "아이디어 의 백링크"
             }
           },
           {
@@ -185,21 +185,21 @@
   },
   "active": "7a3236317b4accc5",
   "lastOpenFiles": [
+    "android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/index-B-9u8qao.js.jar",
+    "android/app/build/intermediates/assets/debug/mergeDebugAssets/public/assets/index-B-9u8qao.js",
+    "web/dist/index.html",
+    "web/dist/assets/index-BmhianRx.css",
+    "web/dist/assets/index-C4HfdCah.js",
+    "web/dist/assets",
+    "dist/assets/index-B-9u8qao.js",
+    "ios/App/App/public/assets/index-B-9u8qao.js",
+    "android/app/src/main/assets/public/assets/index-B-9u8qao.js",
+    "web/dist/assets/index-B-9u8qao.js",
+    "docs/학부모_익명_커뮤니티_앱_기능명세서_v2.md",
     "android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/index-BeYVKNym.js.jar",
-    "android/app/build/intermediates/assets/debug/mergeDebugAssets/public/assets/index-BeYVKNym.js",
-    "web/dist/assets/index-B0v76N3L.js",
-    "dist/assets/index-BeYVKNym.js",
-    "ios/App/App/public/assets/index-BeYVKNym.js",
-    "ios/App/App/public/assets/index-BmhianRx.css",
-    "android/app/src/main/assets/public/assets/index-BeYVKNym.js",
-    "web/dist/assets/index-BeYVKNym.js",
-    "android/app/build/outputs/apk/debug/app-debug.zip",
-    "android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/index-Blnt8OXI.js.jar",
-    "android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/public/assets/index-BmhianRx.css.jar",
     "dist/favicon.svg",
     "dist/icons.svg",
     "docs/business_plan_and_specification.md",
-    "docs/학부모_익명_커뮤니티_앱_기능명세서_v2.md",
     "docs/학부모_익명_커뮤니티_앱_기능명세서_v1.md",
     "아이디어.md",
     "business_plan_and_specification.md",

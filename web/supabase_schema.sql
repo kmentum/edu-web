@@ -1,4 +1,4 @@
--- Barnet Supabase PostgreSQL Database Schema (Phase 1 MVP)
+-- Hakle Supabase PostgreSQL Database Schema (Phase 1 MVP)
 -- 복사하여 Supabase SQL Editor에 붙여넣고 실행(Run)하시면 필요한 테이블들이 자동 생성됩니다.
 
 -- 1. 학부모 회원 프로필 테이블 (profiles)

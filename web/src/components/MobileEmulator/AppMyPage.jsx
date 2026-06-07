@@ -147,7 +147,7 @@ export const AppMyPage = ({ onNavigate, onSelectPost }) => {
 
   // --- Sub Render: Invite link ---
   const renderInviteLink = () => {
-    const inviteText = `[반넷] 대한민국 학부모들의 검증된 가명 소통 광장 '반넷'에 학부모님을 초대합니다!\n\n자녀 정보(학교, 학년) 맞춤 교육 자료 교류와 내신 대비 족보 PDF 마켓을 1,000P 혜택과 함께 무료로 이용해 보세요.\n\n🔗 가입링크: https://barnet-edu.web.app/invite/parent`;
+    const inviteText = `[학클] 대한민국 학부모들의 검증된 가명 소통 광장 '학클'에 학부모님을 초대합니다!\n\n자녀 정보(학교, 학년) 맞춤 교육 자료 교류와 내신 대비 족보 PDF 마켓을 1,000P 혜택과 함께 무료로 이용해 보세요.\n\n🔗 가입링크: https://hakle-edu.web.app/invite/parent`;
     
     const handleCopy = () => {
       navigator.clipboard.writeText(inviteText);
@@ -204,7 +204,7 @@ export const AppMyPage = ({ onNavigate, onSelectPost }) => {
       {
         title: '🔐 실명 유출 없는 안전한 3단계 가명 프로필 가이드',
         date: '2026.05.28',
-        content: '반넷은 모든 활동 시 구글 실명 대신 동네와 학교명이 조합된 자동 가명 닉네임이 적용됩니다. 설정 ➡️ 프로필 수정에서 본인이 원하는 조합 닉네임으로 자유롭게 마스킹을 유지하며 커스텀 작명도 지원하오니 안심하고 활동하세요.'
+        content: '학클은 모든 활동 시 구글 실명 대신 동네와 학교명이 조합된 자동 가명 닉네임이 적용됩니다. 설정 ➡️ 프로필 수정에서 본인이 원하는 조합 닉네임으로 자유롭게 마스킹을 유지하며 커스텀 작명도 지원하오니 안심하고 활동하세요.'
       }
     ];
     

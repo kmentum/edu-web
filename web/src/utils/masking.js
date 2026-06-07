@@ -1,4 +1,4 @@
-// Barnet Pseudonym Region Masking Utility (RSK-03)
+// Hakle Pseudonym Region Masking Utility (RSK-03)
 // 전국 광장 피드 등에서 동네 노출로 인한 서열화 방지를 위해 법정동 주소를 구/군 단위로 마스킹합니다.
 
 const dongToGuMap = {
