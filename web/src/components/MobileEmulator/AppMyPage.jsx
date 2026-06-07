@@ -147,7 +147,7 @@ export const AppMyPage = ({ onNavigate, onSelectPost }) => {
 
   // --- Sub Render: Invite link ---
   const renderInviteLink = () => {
-    const inviteText = `[학클] 대한민국 학부모들의 검증된 가명 소통 광장 '학클'에 학부모님을 초대합니다!\n\n자녀 정보(학교, 학년) 맞춤 교육 자료 교류와 내신 대비 족보 PDF 마켓을 1,000P 혜택과 함께 무료로 이용해 보세요.\n\n🔗 가입링크: https://hak-cle-edu.web.app/invite/parent`;
+    const inviteText = `[학클] 대한민국 학부모들의 검증된 가명 소통 광장 '학클'에 학부모님을 초대합니다!\n\n자녀 정보(학교, 학년) 맞춤 교육 자료 교류와 내신 대비 족보 PDF 마켓을 1,000P 혜택과 함께 무료로 이용해 보세요.\n\n🔗 가입링크: https://kmentum.github.io/edu-web/`;
     
     const handleCopy = () => {
       navigator.clipboard.writeText(inviteText);
