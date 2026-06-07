@@ -95,7 +95,7 @@ export const AppAuth = ({ onNavigate }) => {
           <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
         </svg>
         <h2 style={{ fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.8px', color: 'var(--neutral-dark)', margin: 0 }}>
-          학클 (Hakle)
+          학클 (hak.cle)
         </h2>
         <p style={{ color: 'var(--neutral-muted)', fontSize: '0.78rem', marginTop: '4px', fontWeight: '500' }}>
           인증된 학부모들만의 고품격 가명 소통 광장
@@ -292,7 +292,7 @@ export const AppAuth = ({ onNavigate }) => {
       {/* Footer copyright */}
       <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center' }}>
         <p style={{ color: 'var(--neutral-muted)', fontSize: '0.62rem', margin: 0 }}>
-          © 2026 Hakle. All rights reserved.
+          © 2026 hak.cle. All rights reserved.
         </p>
       </div>
 
